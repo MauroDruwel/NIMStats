@@ -13,7 +13,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       - name: Test model group 1 (DeepSeek, GLM, MiniMax, Nemotron, Kimi)
         env:
@@ -37,7 +37,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       - name: Test model group 2 (GPT-OSS, Gemma, Qwen, Mistral, Llama)
         env:
@@ -62,7 +62,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       - name: Download all results
         uses: actions/download-artifact@v4
