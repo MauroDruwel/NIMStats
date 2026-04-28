@@ -166,7 +166,7 @@ EOF
         else
             echo -e "${GREEN}  ✓ Success (${RESPONSE_TIME}ms, $TOKENS_GENERATED tokens)${NC}"
 
-            CONTENT_ESCAPED=$(python3 -c "import json; print(json.dumps('$CONTENT'))")
+            CONTENT_ESCAPED=$(echo "$CONTENT" | python3 -c "import sys, json; print(json.dumps(sys.stdin.read()))")
 
             MODEL_RESULT=$(cat <<EOF
 {
