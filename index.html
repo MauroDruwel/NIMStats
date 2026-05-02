@@ -159,7 +159,7 @@ td{padding:10px 16px;color:var(--text);vertical-align:middle}
 .stat-card .stat-sub{font-size:11px;color:var(--text-muted);margin-top:3px}
 
 /* Heatmap */
-.heatmap{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:12px}
+.heatmap{display:grid;gap:4px;margin-top:12px}
 .heatmap-cell{aspect-ratio:1;border-radius:3px;position:relative;cursor:default;transition:transform 0.15s}
 .heatmap-cell:hover{transform:scale(1.3);z-index:10}
 .heatmap-cell.pass{background:rgba(34,197,94,0.6)}
@@ -1103,8 +1103,10 @@ function renderExplorer() {
     });
   }
 
-  // Heatmap
+  // Heatmap — dynamic columns based on total run count
   const hm = document.getElementById('explorer-heatmap');
+  const hmCols = Math.ceil(Math.sqrt(s.results.length));
+  hm.style.gridTemplateColumns = `repeat(${hmCols}, 1fr)`;
   hm.innerHTML = s.results.map((r, i) => {
     if (!r) return `<div class="heatmap-cell miss" title="Run ${i+1}: No data"></div>`;
     const ts = fmtTimestamp(state.runs[i]?.timestamp || '');
