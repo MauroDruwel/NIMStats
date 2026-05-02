@@ -29,8 +29,6 @@ ALL_MODELS = [
     "minimaxai/minimax-m2.7",
     "minimaxai/minimax-m2.5",
     "nvidia/nemotron-3-super-120b-a12b",
-    "nvidia/nemotron-4-340b-instruct",
-    "nvidia/llama-3.1-nemotron-ultra-253b-v1",
     "moonshotai/kimi-k2.5",
     "moonshotai/kimi-k2-instruct",
     "openai/gpt-oss-120b",
@@ -45,9 +43,9 @@ ALL_MODELS = [
     "meta/llama-3.2-90b-vision-instruct",
 ]
 
-GROUP1_MODELS = ALL_MODELS[:11]
+GROUP1_MODELS = ALL_MODELS[:10]
 
-GROUP2_MODELS = ALL_MODELS[11:]
+GROUP2_MODELS = ALL_MODELS[10:]
 
 
 def selected_models() -> list[str]:
@@ -138,10 +136,15 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
     try:
         data = json.loads(raw_body)
     except json.JSONDecodeError as exc:
-        return failure_result(
-            model,
-            f"Invalid JSON response: {exc.msg} at line {exc.lineno} column {exc.colno}",
-        )
+        return {
+            "model": model,
+            "success": False,
+            "error": f"Invalid JSON response: {exc.msg} at line {exc.lineno} column {exc.colno}",
+            "responseTime": response_time,
+            "tokensGenerated": None,
+            "totalTokens": None,
+            "response": raw_body,
+        }
 
     error_obj = data.get("error")
     error_message = ""
