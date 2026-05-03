@@ -28,6 +28,9 @@ npm-debug.log*
 # Legacy JSON history (replaced by history.db)
 history.json
 
+# Temporary benchmark output files
+scripts/results*.json
+
 # Python
 __pycache__/
 *.pyc
