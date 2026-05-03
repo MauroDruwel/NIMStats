@@ -2,7 +2,7 @@ name: Benchmark NVIDIA NIM Models
 
 on:
   schedule:
-    - cron: '*/20 * * * *'  # Run every 20 minutes
+    - cron: '0 * * * *'  # Run every hour
   workflow_dispatch:
 
 jobs:

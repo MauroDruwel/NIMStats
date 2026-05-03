@@ -23,11 +23,11 @@
 
 ## ✨ What is NIMStats?
 
-NIMStats automatically benchmarks **20 NVIDIA NIM models** every 20 minutes using GitHub Actions and publishes the results to a beautiful, interactive dashboard. No servers, no subscriptions — just fork, add your API key, and go.
+NIMStats automatically benchmarks **20 NVIDIA NIM models** every hour using GitHub Actions and publishes the results to a beautiful, interactive dashboard. No servers, no subscriptions — just fork, add your API key, and go.
 
 <div align="center">
 
-| 🏎️ 20-Minute Benchmarks | 📊 Interactive Charts | 🔁 Zero Infrastructure | 🌍 Fully Open-Source |
+| 🏎️ Hourly Benchmarks | 📊 Interactive Charts | 🔁 Zero Infrastructure | 🌍 Fully Open-Source |
 |:---:|:---:|:---:|:---:|
 | Automatic via GitHub Actions | Response time, throughput & trends | Static site + free CI/CD | Fork and self-host in minutes |
 
@@ -70,7 +70,7 @@ In your forked repo: **Settings → Secrets and variables → Actions → New re
 
 **Actions → Benchmark NVIDIA NIM Models → Run workflow**
 
-That's it — your dashboard auto-refreshes every 20 minutes. ✨
+That's it — your dashboard auto-refreshes every hour. ✨
 
 ---
 
@@ -127,7 +127,7 @@ That's it — your dashboard auto-refreshes every 20 minutes. ✨
 ## 🏗️ How It Works
 
 ```
-┌──────────────────── GitHub Actions (every 20 minutes) ──────────────────────┐
+┌──────────────────── GitHub Actions (every hour) ──────────────────────┐
 │                                                                               │
 │   ┌─────────────────────┐        ┌─────────────────────┐                    │
 │   │  Job 1 — Group A    │        │  Job 2 — Group B    │  (run in parallel) │
@@ -177,7 +177,7 @@ ALL_MODELS = [
 
 Edit `.github/workflows/benchmark.yml`:
 ```yaml
-- cron: '0 */6 * * *'  # Every 6 hours instead of every 20 minutes
+- cron: '0 */6 * * *'  # Every 6 hours instead of every hour
 ```
 </details>
 
