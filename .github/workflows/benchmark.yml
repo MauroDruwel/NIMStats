@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       
-      - name: Test model group 1 (DeepSeek, GLM, MiniMax, Nemotron, Kimi)
+      - name: Test model group 1
         env:
           NIM_API_KEY: ${{ secrets.NIM_API_KEY }}
           MODEL_GROUP: group1
@@ -35,7 +35,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       
-      - name: Test model group 2 (GPT-OSS, Gemma, Qwen, Mistral, Llama)
+      - name: Test model group 2
         env:
           NIM_API_KEY: ${{ secrets.NIM_API_KEY }}
           MODEL_GROUP: group2
