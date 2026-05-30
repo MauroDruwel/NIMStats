@@ -38,7 +38,8 @@ ALL_MODELS = [
     "meta/llama-3_3-70b-instruct",
     "meta/llama-4-maverick-17b-128e-instruct",
     "meta/llama-3.2-90b-vision-instruct",
-    "stepfun-ai/step-3.5-flash"
+    "stepfun-ai/step-3.5-flash",
+    "stepfun-ai/step-3.7-flash"
 ]
 
 GROUP1_MODELS = ALL_MODELS[:10]
