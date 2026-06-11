@@ -1,17 +1,12 @@
 <div align="center">
 
-[![NIMStats Banner](https://capsule-render.vercel.app/api?type=waving&color=76b900&height=220&section=header&text=NIMStats&fontSize=90&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Real-Time%20NVIDIA%20NIM%20Benchmark%20Dashboard&descSize=22&descAlignY=60&descAlign=50)](https://nimstats.maurodruwel.be/)
-
-[![CI](https://github.com/MauroDruwel/NIMStats/actions/workflows/benchmark.yml/badge.svg)](https://github.com/MauroDruwel/NIMStats/actions)
-[![Live Dashboard](https://img.shields.io/badge/🌐%20live-nimstats.maurodruwel.be-76b900?style=flat-square)](https://nimstats.maurodruwel.be/)
-[![Models](https://img.shields.io/badge/models-20-blue?style=flat-square)](https://build.nvidia.com/models)
+[![CI](https://github.com/ahmedhabibo/NIMStats/actions/workflows/benchmark.yml/badge.svg)](https://github.com/ahmedhabibo/NIMStats/actions)
+[![Models](https://img.shields.io/badge/models-8-blue?style=flat-square)](https://build.nvidia.com/models)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/MauroDruwel/NIMStats/pulls)
-[![Stars](https://img.shields.io/github/stars/MauroDruwel/NIMStats?style=flat-square&color=gold)](https://github.com/MauroDruwel/NIMStats/stargazers)
 
 <br/>
 
-> **Community-driven benchmarking of 20 NVIDIA NIM models — fully automated, zero infra cost, self-hostable in minutes.**
+> **Ahmed Hassan's 3-Layer NIM Architecture Benchmarks — 8 models across Router, Worker, and Reasoning tiers.**
 
 <br/>
 
@@ -23,7 +18,17 @@
 
 ## ✨ What is NIMStats?
 
-NIMStats automatically benchmarks **20 NVIDIA NIM models** every hour using GitHub Actions and publishes the results to a beautiful, interactive dashboard. No servers, no subscriptions — just fork, add your API key, and go.
+NIMStats automatically benchmarks **8 NVIDIA NIM models** every hour using GitHub Actions and publishes the results to a beautiful, interactive dashboard. No servers, no subscriptions — just fork, add your API key, and go.
+
+### 🏗️ 3-Layer Architecture
+
+| Tier | Models | Purpose |
+|------|--------|---------|
+| **Layer 1 — Router** | `minimax-m2.7` | Intent classification, memory management |
+| **Layer 2 — Workers** | `v4-flash`, `nemotron-ultra`, `step-3.7-flash`, `qwen3.5-122b` | Fast, cheap — handles 90% of daily tasks |
+| **Layer 3 — Reasoning** | `kimi-k2.6`, `v4-pro`, `qwen3.5-397b` | Complex reasoning, expensive — invoked only when needed |
+
+**Cost win**: Cheaper models (V4 Flash @ ~139 t/s) handle day-to-day work. Kimi K2.6 and V4 Pro only invoked for difficult tasks.
 
 <div align="center">
 
