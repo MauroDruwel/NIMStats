@@ -1,31 +1,28 @@
-name: Benchmark NVIDIA NIM Models
+name: Benchmark Auxiliary Models
 
 on:
   workflow_dispatch:
   schedule:
-    # Run every hour at :15 past the hour
-    - cron: '15 * * * *'
+    # Aux slots: every 6 hours at :30 past (00:30, 06:30, 12:30, 18:30 UTC)
+    - cron: '30 */6 * * *'
 
 jobs:
   test_group1:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-      
-      - name: Test model group 1
+      - name: Test aux group 1
         env:
           NIM_API_KEY: ${{ secrets.NIM_API_KEY }}
           MODEL_GROUP: group1
-        run: python3 scripts/main_benchmark.py
-      
+        run: python3 scripts/aux_benchmark.py
       - name: Upload group1 results
         uses: actions/upload-artifact@v7
         with:
-          name: results-group1
+          name: aux-results-group1
           path: scripts/results.json
           retention-days: 1
 
@@ -33,21 +30,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-      
-      - name: Test model group 2
+      - name: Test aux group 2
         env:
           NIM_API_KEY: ${{ secrets.NIM_API_KEY }}
           MODEL_GROUP: group2
-        run: python3 scripts/main_benchmark.py
-      
+        run: python3 scripts/aux_benchmark.py
       - name: Upload group2 results
         uses: actions/upload-artifact@v7
         with:
-          name: results-group2
+          name: aux-results-group2
           path: scripts/results.json
           retention-days: 1
 
@@ -56,30 +50,28 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-      
       - name: Download all results
         uses: actions/download-artifact@v8
         with:
           path: scripts/
-      
       - name: Merge results and update history
+        env:
+          BENCHMARK_TYPE: aux
         run: |
-          mv scripts/results-group1/results.json scripts/results-group1.json || true
-          mv scripts/results-group2/results.json scripts/results-group2.json || true
+          mv scripts/aux-results-group1/results.json scripts/results-group1.json || true
+          mv scripts/aux-results-group2/results.json scripts/results-group2.json || true
           python3 scripts/merge_results.py
-      
       - name: Commit and push results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add history.db
           if ! git diff --cached --quiet; then
-            git commit -m "Update benchmark results"
+            git commit -m "Update aux benchmark results"
             git push
           else
-            echo "No history updates to commit"
+            echo "No aux history updates to commit"
           fi

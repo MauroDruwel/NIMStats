@@ -13,13 +13,14 @@ def init_schema(conn: sqlite3.Connection) -> None:
     conn.executescript("""
         PRAGMA journal_mode=WAL;
         CREATE TABLE IF NOT EXISTS runs (
-            id            INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp     TEXT    NOT NULL,
-            prompt        TEXT,
-            success_count INTEGER,
-            total_models  INTEGER,
-            fastest_model TEXT,
-            fastest_time  INTEGER
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp      TEXT    NOT NULL,
+            prompt         TEXT,
+            success_count  INTEGER,
+            total_models   INTEGER,
+            fastest_model  TEXT,
+            fastest_time   INTEGER,
+            benchmark_type TEXT    NOT NULL DEFAULT 'main'
         );
         CREATE TABLE IF NOT EXISTS model_results (
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,21 +33,22 @@ def init_schema(conn: sqlite3.Connection) -> None:
             total_tokens     INTEGER,
             response         TEXT
         );
-        CREATE INDEX IF NOT EXISTS idx_mr_run   ON model_results(run_id);
-        CREATE INDEX IF NOT EXISTS idx_mr_model ON model_results(model);
-        CREATE INDEX IF NOT EXISTS idx_runs_ts  ON runs(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_mr_run         ON model_results(run_id);
+        CREATE INDEX IF NOT EXISTS idx_mr_model       ON model_results(model);
+        CREATE INDEX IF NOT EXISTS idx_runs_ts        ON runs(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_runs_type      ON runs(benchmark_type);
     """)
 
 
-def write_run(run: dict[str, Any], db_path: Path = HISTORY_DB) -> None:
+def write_run(run: dict[str, Any], db_path: Path = HISTORY_DB, benchmark_type: str = "main") -> None:
     """Insert a benchmark run into the database and prune runs beyond MAX_RUNS."""
     summary = run.get("summary", {})
     conn = sqlite3.connect(str(db_path))
     try:
         init_schema(conn)
         cur = conn.execute(
-            """INSERT INTO runs (timestamp, prompt, success_count, total_models, fastest_model, fastest_time)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+            """INSERT INTO runs (timestamp, prompt, success_count, total_models, fastest_model, fastest_time, benchmark_type)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (
                 run.get("timestamp"),
                 run.get("prompt"),
@@ -54,6 +56,7 @@ def write_run(run: dict[str, Any], db_path: Path = HISTORY_DB) -> None:
                 summary.get("totalModels"),
                 summary.get("fastestModel"),
                 summary.get("fastestTime"),
+                benchmark_type,
             ),
         )
         run_id = cur.lastrowid
@@ -76,8 +79,9 @@ def write_run(run: dict[str, Any], db_path: Path = HISTORY_DB) -> None:
             ],
         )
         conn.execute(
-            f"DELETE FROM runs WHERE id NOT IN "
-            f"(SELECT id FROM runs ORDER BY timestamp DESC LIMIT {MAX_RUNS})"
+            "DELETE FROM runs WHERE benchmark_type = ? AND id NOT IN "
+            "(SELECT id FROM runs WHERE benchmark_type = ? ORDER BY timestamp DESC LIMIT ?)",
+            (benchmark_type, benchmark_type, MAX_RUNS),
         )
         conn.commit()
     finally:
