@@ -22,16 +22,17 @@ PROMPT = "Write a Python function that checks if a number is prime and returns T
 SCRIPT_DIR = Path(__file__).resolve().parent
 OUTPUT_FILE = SCRIPT_DIR / "results.json"
 
-# Aux slot models from agentic_architect config.yaml
+# Aux slot models from ~/.hermes/config.yaml (actual live config)
+# step-3.7-flash dominates (10 slots), kimi-k2.6 for vision, nemotron content safety, nano omni
 ALL_MODELS = [
-    "minimaxai/minimax-m3",                        # vision
-    "nvidia/nemotron-3-nano-30b-a3b",              # web_extract, skills_hub, mcp
-    "deepseek-ai/deepseek-v4-pro",                 # compression
-    "nvidia/nemotron-content-safety-reasoning-4b", # approval
-    "nvidia/nvidia-nemotron-nano-9b-v2",           # title_generation, session_search
-    "nvidia/nemotron-3-super-120b-a12b",           # triage_specifier, kanban_decomposer
-    "stepfun-ai/step-3.5-flash",                   # profile_describer
-    "z-ai/glm-5.1",                                # curator (Arabic/multilingual)
+    # Ahmed's actual auxiliary slot models from ~/.hermes/config.yaml
+    "stepfun-ai/step-3.7-flash",                    # web_extract, compression, skills_hub, mcp,
+                                                     # title_generation, triage_specifier,
+                                                     # kanban_decomposer, profile_describer,
+                                                     # curator, session_search
+    "moonshotai/kimi-k2.6",                         # vision
+    "nvidia/nemotron-3.5-content-safety",            # approval
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", # registered nano model
 ]
 
 GROUP1_MODELS = ALL_MODELS[:4]

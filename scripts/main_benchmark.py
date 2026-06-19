@@ -23,22 +23,20 @@ PROMPT = "Write a Python function that checks if a number is prime and returns T
 SCRIPT_DIR = Path(__file__).resolve().parent
 OUTPUT_FILE = SCRIPT_DIR / "results.json"
 
-# Ahmed Hassan's NIM Profile Chain — 8 models (3-layer architecture)
-# Layer 1 (Router): minimax-m3
-# Layer 2 (Workers): v4-flash, nemotron-ultra, step-3.7-flash
-# Layer 3 (Reasoning): kimi-k2.6, v4-pro, qwen3.5-397b
+# Ahmed Hassan's main fallback chain — from ~/.hermes/config.yaml
+# Default: minimax-m3
+# Fallbacks: deepseek-v4-pro → glm-5.1 → kimi-k2.6 → v4-flash → nemotron-ultra → qwen3.5-397b → mistral-medium
 ALL_MODELS = [
-    # Worker models (fast, cheap — default tier)
-    "deepseek-ai/deepseek-v4-flash",
-    "nvidia/nemotron-3-ultra-550b-a55b",
-    "stepfun-ai/step-3.7-flash",
-    "qwen/qwen3.5-122b-a10b",
-    # Reasoning models (expensive — complex tasks only)
-    "moonshotai/kimi-k2.6",
-    "deepseek-ai/deepseek-v4-pro",
-    "qwen/qwen3.5-397b-a17b",
-    # Router / Memory
-    "minimaxai/minimax-m3",
+    # Ahmed's actual fallback chain from ~/.hermes/config.yaml
+    # Fallback order: deepseek-v4-pro → glm-5.1 → kimi-k2.6 → v4-flash → nemotron-ultra → qwen3.5-397b → mistral-medium
+    "deepseek-ai/deepseek-v4-pro",     # fallback 1 (reasoning)
+    "z-ai/glm-5.1",                    # fallback 2 (Arabic/multilingual)
+    "moonshotai/kimi-k2.6",            # fallback 3 (long context / vision)
+    "deepseek-ai/deepseek-v4-flash",  # fallback 4 (fast worker)
+    "nvidia/nemotron-3-ultra-550b-a55b", # fallback 5 (high throughput)
+    "qwen/qwen3.5-397b-a17b",         # fallback 6 (MoE reasoning)
+    "mistralai/mistral-medium-3.5-128b", # fallback 7 (mid-tier)
+    "minimaxai/minimax-m3",            # default session model (router)
 ]
 
 GROUP1_MODELS = ALL_MODELS[:4]

@@ -2,15 +2,16 @@
 
 [![CI](https://github.com/ahmedhabibo/NIMStats/actions/workflows/benchmark.yml/badge.svg)](https://github.com/ahmedhabibo/NIMStats/actions)
 [![Models](https://img.shields.io/badge/models-8-blue?style=flat-square)](https://build.nvidia.com/models)
+[![Aux Models](https://img.shields.io/badge/aux_models-4-orange?style=flat-square)](https://build.nvidia.com/models)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](LICENSE)
 
 <br/>
 
-> **Ahmed Hassan's 3-Layer NIM Architecture Benchmarks — 8 models across Router, Worker, and Reasoning tiers.**
+> **Ahmed Hassan's actual Hermes Agent model config — tracked live from ~/.hermes/config.yaml**
 
 <br/>
 
-**[🚀 View Live Dashboard](https://nimstats.maurodruwel.be/) · [📖 Docs](#-quick-start) · [🤝 Contribute](#-contributing) · [💬 Discussions](https://github.com/MauroDruwel/NIMStats/discussions)**
+**[🚀 View Live Dashboard](https://nimstats.a-hassan-b-h.workers.dev/) · [📖 Docs](#-quick-start) · [🤝 Contribute](#-contributing) · [💬 Discussions](https://github.com/ahmedhabibo/NIMStats/discussions)**
 
 </div>
 
@@ -18,15 +19,29 @@
 
 ## ✨ What is NIMStats?
 
-NIMStats automatically benchmarks **8 NVIDIA NIM models** every hour using GitHub Actions and publishes the results to a beautiful, interactive dashboard. No servers, no subscriptions — just fork, add your API key, and go.
+NIMStats automatically benchmarks **8 main fallback chain models** every hour and **4 auxiliary slot models** every 6 hours. Results published to a beautiful dashboard.
 
-### 🏗️ 3-Layer Architecture
+### 🏗️ Hermes Agent Actual Config (as of 2026-06-19)
 
-| Tier | Models | Purpose |
-|------|--------|---------|
-| **Layer 1 — Router** | `minimax-m2.7` | Intent classification, memory management |
-| **Layer 2 — Workers** | `v4-flash`, `nemotron-ultra`, `step-3.7-flash`, `qwen3.5-122b` | Fast, cheap — handles 90% of daily tasks |
-| **Layer 3 — Reasoning** | `kimi-k2.6`, `v4-pro`, `qwen3.5-397b` | Complex reasoning, expensive — invoked only when needed |
+#### Main Chain (default + fallback order)
+| Model | Role |
+|-------|------|
+| `minimaxai/minimax-m3` | **Default session model** (router/memory) |
+| `deepseek-ai/deepseek-v4-pro` | Fallback 1 (reasoning) |
+| `z-ai/glm-5.1` | Fallback 2 (Arabic/multilingual) |
+| `moonshotai/kimi-k2.6` | Fallback 3 (long context, vision) |
+| `deepseek-ai/deepseek-v4-flash` | Fallback 4 (fast worker) |
+| `nvidia/nemotron-3-ultra-550b-a55b` | Fallback 5 (high throughput) |
+| `qwen/qwen3.5-397b-a17b` | Fallback 6 (MoE reasoning) |
+| `mistralai/mistral-medium-3.5-128b` | Fallback 7 (mid-tier) |
+
+#### Aux Slots (actual slot assignments)
+| Model | Slots |
+|-------|-------|
+| `stepfun-ai/step-3.7-flash` | web_extract, compression, skills_hub, mcp, title_generation, triage_specifier, kanban_decomposer, profile_describer, curator, session_search |
+| `moonshotai/kimi-k2.6` | vision |
+| `nvidia/nemotron-3.5-content-safety` | approval |
+| `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` | registered nano model |
 
 **Cost win**: Cheaper models (V4 Flash @ ~139 t/s) handle day-to-day work. Kimi K2.6 and V4 Pro only invoked for difficult tasks.
 
