@@ -82,7 +82,18 @@ jobs:
           git add history.db
           if ! git diff --cached --quiet; then
             git commit -m "Update benchmark results"
-            git push
+            # Retry push to handle race with concurrent aux workflow
+            for i in 1 2 3 4 5; do
+              if git push; then
+                echo "Push succeeded on attempt $i"
+                exit 0
+              fi
+              echo "Push failed (race with other workflow), waiting $((i*10))s for retry..."
+              sleep $((i*10))
+              git pull --rebase origin main
+            done
+            echo "ERROR: push failed after 5 attempts"
+            exit 1
           else
             echo "No history updates to commit"
           fi
