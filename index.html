@@ -1013,11 +1013,17 @@ function initLeaderboardSort() {
 // ─── Explorer Tab ─────────────────────────────────────────────────────────────
 function populateExplorerSelect() {
   const sel = document.getElementById('explorer-select');
-  const sorted = [...state.modelNames].sort((a,b) => state.modelStats[b].score - state.modelStats[a].score);
-  sel.innerHTML = sorted.map(m =>
+  if (!sel) return;
+  const sorted = [...state.modelNames].sort((a,b) => (state.modelStats[b]?.score || 0) - (state.modelStats[a]?.score || 0));
+
+  // Rebuild without stacking listeners
+  const newSel = sel.cloneNode(false);
+  newSel.innerHTML = sorted.map(m =>
     `<option value="${m}"${m === state.explorerModel ? ' selected' : ''}>${shortModel(m)} (${providerMeta(m).name})</option>`
   ).join('');
-  sel.addEventListener('change', e => {
+  sel.parentNode.replaceChild(newSel, sel);
+
+  newSel.addEventListener('change', e => {
     state.explorerModel = e.target.value;
     renderExplorer();
   });
@@ -1212,28 +1218,40 @@ function renderTimeline() {
 
 // ─── Compare Tab ──────────────────────────────────────────────────────────────
 function populateCompareSelects() {
-  const sorted = [...state.modelNames].sort((a,b) => state.modelStats[b].score - state.modelStats[a].score);
+  const sorted = [...state.modelNames].sort((a,b) => (state.modelStats[b]?.score || 0) - (state.modelStats[a]?.score || 0));
   const opts = sorted.map(m => `<option value="${m}">${shortModel(m)} (${providerMeta(m).name})</option>`).join('');
 
   const selA = document.getElementById('compare-a');
   const selB = document.getElementById('compare-b');
-  selA.innerHTML = opts;
-  selB.innerHTML = opts;
+  if (!selA || !selB) return;
+
+  // Clone to avoid stacking listeners on repeated calls
+  const newA = selA.cloneNode(false);
+  const newB = selB.cloneNode(false);
+  newA.innerHTML = opts;
+  newB.innerHTML = opts;
+  selA.parentNode.replaceChild(newA, selA);
+  selB.parentNode.replaceChild(newB, selB);
 
   const defaultA = 'qwen/qwen3-coder-480b-a35b-instruct';
   const defaultB = 'nvidia/nemotron-3-super-120b-a12b';
-  selA.value = state.modelNames.includes(defaultA) ? defaultA : sorted[0];
-  selB.value = state.modelNames.includes(defaultB) ? defaultB : sorted[1];
+  newA.value = state.modelNames.includes(defaultA) ? defaultA : (sorted[0] || '');
+  newB.value = state.modelNames.includes(defaultB) ? defaultB : (sorted[1] || sorted[0] || '');
 
-  selA.addEventListener('change', renderCompare);
-  selB.addEventListener('change', renderCompare);
+  newA.addEventListener('change', renderCompare);
+  newB.addEventListener('change', renderCompare);
 
-  document.getElementById('swap-btn').addEventListener('click', () => {
-    const tmp = selA.value;
-    selA.value = selB.value;
-    selB.value = tmp;
-    renderCompare();
-  });
+  const swapBtn = document.getElementById('swap-btn');
+  if (swapBtn) {
+    const newSwap = swapBtn.cloneNode(true);
+    swapBtn.parentNode.replaceChild(newSwap, swapBtn);
+    newSwap.addEventListener('click', () => {
+      const tmp = newA.value;
+      newA.value = newB.value;
+      newB.value = tmp;
+      renderCompare();
+    });
+  }
 }
 
 function renderCompare() {

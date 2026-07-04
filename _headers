@@ -1,0 +1,6 @@
+/top
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *
+/top/model
+  Content-Type: text/plain
+  Access-Control-Allow-Origin: *

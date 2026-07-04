@@ -85,6 +85,7 @@ That's it — your dashboard auto-refreshes every hour. ✨
 | **🔬 Explorer** | Per-model deep dive · response time history chart · error breakdown donut · availability heatmap |
 | **⏱ Timeline** | Filterable run history (All / 24h / 48h / 7d) · expandable run cards with full per-model detail |
 | **⚔️ Compare** | Head-to-head overlay chart · win-rate stats · side-by-side metric comparison |
+| **🔗 `/top` API** | Static endpoints — `GET /top` returns JSON with the current #1 model (score, uptime, speed, throughput); `GET /top/model` returns just the plain-text model name. Poll from Postman, scripts, or apps |
 
 </div>
 
