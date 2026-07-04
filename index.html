@@ -176,8 +176,6 @@ td{padding:10px 16px;color:var(--text);vertical-align:middle}
 .status-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
 .status-badge.ok{background:var(--success-dim);color:var(--success)}
 .status-badge.fail{background:var(--danger-dim);color:var(--danger)}
-.btn-view{background:var(--bg-card2);border:1px solid var(--border-bright);color:var(--text-dim);font-size:11px;padding:3px 10px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s}
-.btn-view:hover{color:var(--accent);border-color:var(--accent)}
 
 /* Timeline */
 .timeline-controls{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
@@ -222,22 +220,6 @@ td{padding:10px 16px;color:var(--text);vertical-align:middle}
 .h2h-val-a.winner,.h2h-val-b.winner{color:var(--accent)}
 .h2h-row:hover{background:var(--bg-hover)}
 
-/* Modal */
-#modal{position:fixed;inset:0;z-index:500;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)}
-#modal.open{display:flex;animation:fadeIn 0.2s}
-.modal-box{background:var(--bg-card);border:1px solid var(--border-bright);border-radius:var(--radius) var(--radius) 0 0;width:100%;max-width:900px;max-height:85vh;display:flex;flex-direction:column;animation:slideUp 0.25s ease-out}
-@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.modal-header{display:flex;align-items:center;gap:12px;padding:18px 24px;border-bottom:1px solid var(--border);flex-shrink:0}
-.modal-title{font-size:14px;font-weight:600;color:var(--text);font-family:'JetBrains Mono',monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.modal-close{background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;line-height:1;padding:4px 8px;border-radius:4px;transition:color 0.2s}
-.modal-close:hover{color:var(--text)}
-.modal-copy{background:var(--bg-card2);border:1px solid var(--border-bright);color:var(--text-dim);font-size:12px;padding:5px 12px;border-radius:var(--radius-sm);cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s}
-.modal-copy:hover{color:var(--accent);border-color:var(--accent)}
-.modal-body{flex:1;overflow-y:auto;padding:20px 24px}
-.modal-body pre{background:var(--bg-card2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;color:var(--accent);margin:12px 0}
-.modal-body p{margin-bottom:10px;color:var(--text);font-size:14px;line-height:1.7}
-.modal-body code{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg-card2);padding:1px 5px;border-radius:3px;color:var(--blue)}
 
 /* Section headers */
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
@@ -396,7 +378,7 @@ td{padding:10px 16px;color:var(--text);vertical-align:middle}
           <div class="card-title"><span class="dot"></span>Run History (last 20)</div>
           <div class="run-table-wrap">
             <table class="run-table">
-              <thead><tr><th>Timestamp</th><th>Status</th><th>Response Time</th><th>Tok/s</th><th>Action</th></tr></thead>
+              <thead><tr><th>Timestamp</th><th>Status</th><th>Response Time</th><th>Tok/s</th></tr></thead>
               <tbody id="explorer-run-table"></tbody>
             </table>
           </div>
@@ -455,18 +437,6 @@ td{padding:10px 16px;color:var(--text);vertical-align:middle}
   </main>
 </div>
 
-<!-- Response Modal -->
-<div id="modal">
-  <div class="modal-box" id="modal-box">
-    <div class="modal-header">
-      <span class="provider-chip" id="modal-provider-chip"></span>
-      <div class="modal-title" id="modal-title"></div>
-      <button class="modal-copy" id="modal-copy">Copy</button>
-      <button class="modal-close" id="modal-close">✕</button>
-    </div>
-    <div class="modal-body" id="modal-body"></div>
-  </div>
-</div>
 
 <script>
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -518,8 +488,7 @@ const state = {
   explorerModel: 'qwen/qwen3-coder-480b-a35b-instruct',
   lbSort: { col: 'score', dir: 'desc' },
   lbFilter: '',
-  timelineFilter: 'all',
-  modalResponse: ''
+  timelineFilter: 'all'
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -629,30 +598,6 @@ function sparklineSVG(values, width = 80, height = 24, color = '#76b900') {
   return `<svg width="${width}" height="${height}" style="overflow:visible"><path d="${d}" stroke="${color}" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2.5" fill="${color}"/></svg>`;
 }
 
-function renderMarkdown(text) {
-  if (!text) return '';
-  // Code blocks
-  text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
-    return `<pre><code class="lang-${lang}">${escHtml(code.trimEnd())}</code></pre>`;
-  });
-  // Inline code
-  text = text.replace(/`([^`]+)`/g, (_, c) => `<code>${escHtml(c)}</code>`);
-  // Bold
-  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  // Paragraphs
-  const lines = text.split('\n');
-  const out = [];
-  let inPre = false;
-  for (const line of lines) {
-    if (line.startsWith('<pre>')) inPre = true;
-    if (line.endsWith('</pre>')) { inPre = false; out.push(line); continue; }
-    if (inPre) { out.push(line); continue; }
-    if (line.trim() === '') { out.push(''); continue; }
-    out.push(`<p>${line}</p>`);
-  }
-  return out.join('\n');
-}
-
 function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
@@ -660,22 +605,30 @@ function escHtml(s) {
 // ─── SQLite Data Loader ───────────────────────────────────────────────────────
 function loadFromDb(db) {
   const runsQ = db.exec(
-    'SELECT id, timestamp, prompt, success_count, total_models, fastest_model, fastest_time FROM runs ORDER BY timestamp DESC'
+    `SELECT r.id, r.timestamp, p.text, m.name, r.fastest_time
+     FROM runs r
+     JOIN prompts p ON r.prompt_id = p.id
+     LEFT JOIN models m ON r.fastest_model_id = m.id
+     ORDER BY r.timestamp DESC`
   );
   if (!runsQ.length || !runsQ[0].values.length) return { runs: [] };
 
-  const runs = runsQ[0].values.map(([id, timestamp, prompt, sc, tm, fm, ft]) => ({
+  const runs = runsQ[0].values.map(([id, timestamp, prompt, fm, ft]) => ({
     _dbId: id,
     timestamp,
     prompt,
     models: [],
-    summary: { successCount: sc, totalModels: tm, fastestModel: fm, fastestTime: ft }
+    summary: { fastestModel: fm || 'N/A', fastestTime: ft || 0 }
   }));
 
   const runById = new Map(runs.map((r, i) => [r._dbId, i]));
 
   const resQ = db.exec(
-    'SELECT run_id, model, success, error, response_time, tokens_generated, total_tokens FROM model_results ORDER BY run_id ASC'
+    `SELECT mr.run_id, m.name, mr.success, e.text, mr.response_time, mr.tokens_generated, mr.total_tokens
+     FROM model_results mr
+     JOIN models m ON mr.model_id = m.id
+     LEFT JOIN errors e ON mr.error_id = e.id
+     ORDER BY mr.run_id ASC`
   );
   if (resQ.length && resQ[0].values.length) {
     for (const [run_id, model, success, error, rt, tg, tt] of resQ[0].values) {
@@ -688,11 +641,17 @@ function loadFromDb(db) {
           responseTime: rt,
           tokensGenerated: tg,
           totalTokens: tt,
-          response: null  // lazy-loaded on demand
         });
       }
     }
   }
+
+  // Derive success count and total models per run
+  for (const run of runs) {
+    run.summary.successCount = run.models.filter(m => m.success).length;
+    run.summary.totalModels = run.models.length;
+  }
+
   return { runs };
 }
 
@@ -1177,32 +1136,15 @@ function renderExplorer() {
   const tbody = document.getElementById('explorer-run-table');
   const last20 = s.results.map((r, i) => ({ r, i })).slice(-20).reverse();
   tbody.innerHTML = last20.map(({ r, i }) => {
-    if (!r) return `<tr><td class="mono text-dim">${fmtTimestamp(state.runs[i]?.timestamp||'')}</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+    if (!r) return `<tr><td class="mono text-dim">${fmtTimestamp(state.runs[i]?.timestamp||'')}</td><td>—</td><td>—</td><td>—</td></tr>`;
     const tps = (r.success && r.responseTime > 0) ? (r.tokensGenerated / (r.responseTime / 1000)).toFixed(1) : null;
-    const actionBtn = r.success
-      ? `<button class="btn-view" data-run="${i}">View</button>` : '—';
     return `<tr>
       <td class="mono" style="font-size:11px">${fmtTimestamp(state.runs[i]?.timestamp||'')}</td>
       <td><span class="status-badge ${r.success?'ok':'fail'}">${r.success?'✓ OK':'✗ Fail'}</span></td>
       <td class="mono">${r.success ? (r.responseTime/1000).toFixed(2)+'s' : '—'}</td>
       <td class="mono">${tps ? tps+' t/s' : '—'}</td>
-      <td>${actionBtn}</td>
     </tr>`;
   }).join('');
-
-  tbody.querySelectorAll('.btn-view[data-run]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const idx = parseInt(btn.dataset.run);
-      const run = state.runs[idx];
-      if (!run) return;
-      const q = state.db.exec(
-        'SELECT response FROM model_results WHERE run_id = ? AND model = ?',
-        [run._dbId, model]
-      );
-      const response = q[0]?.values[0]?.[0] || '';
-      openModal(model, response);
-    });
-  });
 }
 
 // ─── Timeline Tab ─────────────────────────────────────────────────────────────
@@ -1439,21 +1381,6 @@ function renderCompare() {
   });
 }
 
-// ─── Modal ────────────────────────────────────────────────────────────────────
-function openModal(model, response) {
-  state.modalResponse = response || '';
-  const pm = providerMeta(model);
-  document.getElementById('modal-provider-chip').textContent = pm.name;
-  document.getElementById('modal-provider-chip').style.cssText = `background:${pm.color}22;color:${pm.color};border:1px solid ${pm.color}44`;
-  document.getElementById('modal-title').textContent = model;
-  document.getElementById('modal-body').innerHTML = renderMarkdown(response || '');
-  document.getElementById('modal').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('modal').classList.remove('open');
-}
-
 // ─── Tab Navigation ───────────────────────────────────────────────────────────
 function switchTab(tabName) {
   state.currentTab = tabName;
@@ -1512,17 +1439,6 @@ async function init() {
     // Nav tabs
     document.querySelectorAll('.nav-tab[data-goto]').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.goto));
-    });
-
-    // Modal controls
-    document.getElementById('modal-close').addEventListener('click', closeModal);
-    document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
-    document.getElementById('modal-copy').addEventListener('click', () => {
-      navigator.clipboard?.writeText(state.modalResponse).then(() => {
-        const btn = document.getElementById('modal-copy');
-        btn.textContent = 'Copied!';
-        setTimeout(() => btn.textContent = 'Copy', 1500);
-      });
     });
 
     // Initial render

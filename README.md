@@ -209,8 +209,11 @@ python3 scripts/test_models.py
 **Schema:**
 
 ```sql
-runs          (id, timestamp, prompt, success_count, total_models, fastest_model, fastest_time)
-model_results (run_id, model, success, error, response_time, tokens_generated, total_tokens, response)
+prompts       (id, text)
+models        (id, name)
+errors        (id, text)
+runs          (id, timestamp, prompt_id, fastest_model_id, fastest_time)
+model_results (run_id, model_id, success, error_id, response_time, tokens_generated, total_tokens)
 ```
 
 **Benchmark parameters:** `temperature: 0.7` · `top_p: 0.9` · `max_tokens: 500` · OpenAI-compatible API
