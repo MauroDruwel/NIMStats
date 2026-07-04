@@ -47,9 +47,9 @@ ALL_MODELS = [
     "stepfun-ai/step-3.7-flash"
 ]
 
-GROUP1_MODELS = ALL_MODELS[:11]
+GROUP1_MODELS = ALL_MODELS[: len(ALL_MODELS) // 2 + len(ALL_MODELS) % 2]
 
-GROUP2_MODELS = ALL_MODELS[11:]
+GROUP2_MODELS = ALL_MODELS[len(ALL_MODELS) // 2 + len(ALL_MODELS) % 2 :]
 
 
 def selected_models() -> list[str]:

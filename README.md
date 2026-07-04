@@ -133,7 +133,7 @@ That's it — your dashboard auto-refreshes every hour. ✨
 │                                                                       │
 │   ┌─────────────────────┐        ┌─────────────────────┐              │
 │   │  Job 1 — Group A    │        │  Job 2 — Group B    │ (parallel)  │
-│   │  11 NIM models      │        │  11 NIM models      │              │
+│   │  N/2 NIM models     │        │  N/2 NIM models     │              │
 │   └──────────┬──────────┘        └──────────┬──────────┘              │
 │              └──────────────┬───────────────┘                         │
 │                    ┌────────▼────────┐                                 │

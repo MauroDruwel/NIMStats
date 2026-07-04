@@ -79,7 +79,8 @@ def cmd_add(model_id: str) -> int:
     models.append(model_id)
     _write_all_models(models)
     print(f"Added '{model_id}' to ALL_MODELS ({len(models)} total).")
-    print("Remember to rebalance GROUP1_MODELS / GROUP2_MODELS if needed.")
+    half = len(models) // 2 + len(models) % 2
+    print(f"Groups auto-balanced: group1={half}, group2={len(models) - half}.")
     return 0
 
 
@@ -91,6 +92,8 @@ def cmd_remove(model_id: str) -> int:
         models.remove(model_id)
         _write_all_models(models)
         print(f"Removed '{model_id}' from ALL_MODELS ({len(models)} total).")
+        half = len(models) // 2 + len(models) % 2
+        print(f"Groups auto-balanced: group1={half}, group2={len(models) - half}.")
 
     conn = _db_connect()
     row = conn.execute("SELECT id FROM models WHERE name = ?", (model_id,)).fetchone()
