@@ -4,14 +4,14 @@
 
 [![CI](https://github.com/MauroDruwel/NIMStats/actions/workflows/benchmark.yml/badge.svg)](https://github.com/MauroDruwel/NIMStats/actions)
 [![Live Dashboard](https://img.shields.io/badge/🌐%20live-nimstats.maurodruwel.be-76b900?style=flat-square)](https://nimstats.maurodruwel.be/)
-[![Models](https://img.shields.io/badge/models-20-blue?style=flat-square)](https://build.nvidia.com/models)
+[![Models](https://img.shields.io/badge/models-22-blue?style=flat-square)](https://build.nvidia.com/models)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/MauroDruwel/NIMStats/pulls)
 [![Stars](https://img.shields.io/github/stars/MauroDruwel/NIMStats?style=flat-square&color=gold)](https://github.com/MauroDruwel/NIMStats/stargazers)
 
 <br/>
 
-> **Community-driven benchmarking of 20 NVIDIA NIM models — fully automated, zero infra cost, self-hostable in minutes.**
+> **Community-driven benchmarking of 22 NVIDIA NIM models — fully automated, zero infra cost, self-hostable in minutes.**
 
 <br/>
 
@@ -23,7 +23,7 @@
 
 ## ✨ What is NIMStats?
 
-NIMStats automatically benchmarks **20 NVIDIA NIM models** every hour using GitHub Actions and publishes the results to a beautiful, interactive dashboard. No servers, no subscriptions — just fork, add your API key, and go.
+NIMStats automatically benchmarks **22 NVIDIA NIM models** every hour using GitHub Actions and publishes the results to a beautiful, interactive dashboard. No servers, no subscriptions — just fork, add your API key, and go.
 
 <div align="center">
 
@@ -62,7 +62,7 @@ In your forked repo: **Settings → Secrets and variables → Actions → New re
 
 | Platform | Steps |
 |----------|-------|
-| **Cloudflare Pages** | Connect repo in [Cloudflare Pages](https://pages.cloudflare.com/) |
+| **Cloudflare Pages** | Connect repo → auto-deploys on every push to `main` |
 | **GitHub Pages** | Settings → Pages → Deploy from `main` |
 | **Netlify / Vercel** | Connect repo for instant auto-deploy |
 
@@ -93,7 +93,7 @@ That's it — your dashboard auto-refreshes every hour. ✨
 ## 🤖 Benchmarked Models
 
 <details>
-<summary><b>20 models across 11 providers — click to expand</b></summary>
+<summary><b>22 models across 11 providers — click to expand</b></summary>
 
 <br/>
 
@@ -101,25 +101,22 @@ That's it — your dashboard auto-refreshes every hour. ✨
 |----------|-------|-----------|
 | **DeepSeek** | `deepseek-ai/deepseek-v4-flash` | Fast MoE, optimized for speed |
 | **DeepSeek** | `deepseek-ai/deepseek-v4-pro` | Professional-grade reasoning |
-| **DeepSeek** | `deepseek-ai/deepseek-v3.2` | Latest with improved reasoning |
-| **Z-AI** | `z-ai/glm-5.1` | Superior code understanding |
-| **Z-AI** | `z-ai/glm-4.7` | Strong mathematical capabilities |
+| **Z-AI** | `z-ai/glm-5.2` | Superior code understanding |
 | **MiniMax** | `minimaxai/minimax-m2.7` | Efficient inference model |
-| **MiniMax** | `minimaxai/minimax-m2.5` | Previous generation MiniMax |
+| **MiniMax** | `minimaxai/minimax-m3` | Latest MiniMax generation |
 | **NVIDIA** | `nvidia/nemotron-3-super-120b-a12b` | NVIDIA's 120B flagship |
 | **NVIDIA** | `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` | Compact omni reasoning model |
+| **NVIDIA** | `nvidia/llama-3.3-nemotron-super-49b-v1.5` | Nemotron Super 49B v1.5 |
 | **Moonshot** | `moonshotai/kimi-k2.6` | Context-optimized model |
-| **Moonshot** | `moonshotai/kimi-k2-instruct` | Instruction-tuned Kimi |
 | **OpenAI** | `openai/gpt-oss-120b` | Open-source 120B |
 | **Google** | `google/gemma-4-31b-it` | Lightweight edge inference |
-| **Qwen** | `qwen/qwen3-coder-480b-a35b-instruct` | Specialized coding (480B MoE) |
-| **Qwen** | `qwen/qwen2.5-coder-32b-instruct` | Lightweight Qwen coder |
 | **Qwen** | `qwen/qwen3.5-397b-a17b` | Flagship Qwen (397B) |
 | **Qwen** | `qwen/qwen3.5-122b-a10b` | Mid-range Qwen 3.5 MoE |
-| **Mistral** | `mistralai/devstral-2-123b-instruct-2512` | Developer-focused (123B) |
+| **Qwen** | `qwen/qwen3-next-80b-a3b-instruct` | Next-gen Qwen (80B MoE) |
 | **Mistral** | `mistralai/mistral-large-3-675b-instruct-2512` | Largest Mistral (675B) |
 | **Mistral** | `mistralai/mistral-medium-3.5-128b` | Efficient medium-scale Mistral |
-| **Meta** | `meta/llama-3_3-70b-instruct` | Llama 3.3 70B |
+| **Mistral** | `mistralai/mistral-small-4-119b-2603` | Mistral Small 4 (119B) |
+| **Meta** | `meta/llama-3.3-70b-instruct` | Llama 3.3 70B |
 | **Meta** | `meta/llama-4-maverick-17b-128e-instruct` | Llama 4 Maverick (128 experts) |
 | **Meta** | `meta/llama-3.2-90b-vision-instruct` | Multimodal 90B vision model |
 | **StepFun** | `stepfun-ai/step-3.5-flash` | Ultra-fast flash model |
@@ -131,24 +128,24 @@ That's it — your dashboard auto-refreshes every hour. ✨
 
 ## 🏗️ How It Works
 
-```
-┌──────────────────── GitHub Actions (every hour) ──────────────────────┐
-│                                                                               │
-│   ┌─────────────────────┐        ┌─────────────────────┐                    │
-│   │  Job 1 — Group A    │        │  Job 2 — Group B    │  (run in parallel) │
-│   │  10 NIM models      │        │  10 NIM models      │                    │
-│   └──────────┬──────────┘        └──────────┬──────────┘                    │
-│              └──────────────┬───────────────┘                               │
-│                    ┌────────▼────────┐                                       │
-│                    │  Merge + commit │  → history.db updated in repo         │
-│                    └─────────────────┘                                       │
-└───────────────────────────────────────────────────────────────────────────── ┘
-                                     │
-                          ┌──────────▼──────────┐
-                          │  Static Dashboard   │  rebuilds on each push
-                          │  (Pages / Netlify)  │
-                          └─────────────────────┘
-```
+````
+┌──────────────────── GitHub Actions (every hour) ────────────────────┐
+│                                                                       │
+│   ┌─────────────────────┐        ┌─────────────────────┐              │
+│   │  Job 1 — Group A    │        │  Job 2 — Group B    │ (parallel)  │
+│   │  11 NIM models      │        │  11 NIM models      │              │
+│   └──────────┬──────────┘        └──────────┬──────────┘              │
+│              └──────────────┬───────────────┘                         │
+│                    ┌────────▼────────┐                                 │
+│                    │  Merge + commit │ → history.db committed to repo │
+│                    └─────────────────┘                                 │
+└───────────────────────────────────────────────────────────────────────┘
+                              │
+                   ┌──────────▼──────────┐
+                   │  Cloudflare Pages     │ → auto-deploys on push
+                   │  (static dashboard)  │   index.html + history.db
+                   └──────────────────────┘
+````
 
 **Parallel jobs = ~50% faster benchmarks** ⚡
 
