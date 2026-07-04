@@ -23,13 +23,13 @@
 
 ## ✨ What is NIMStats?
 
-NIMStats benchmarks **22 NVIDIA NIM models** using GitHub Actions and publishes the results to a beautiful, interactive dashboard. No servers, no subscriptions — just fork, add your API key, and go.
+NIMStats automatically benchmarks **22 NVIDIA NIM models** every hour using GitHub Actions and publishes the results to a beautiful, interactive dashboard. No servers, no subscriptions — just fork, add your API key, and go.
 
 <div align="center">
 
-| 🏎️ On-Demand Benchmarks | 📊 Interactive Charts | 🔁 Zero Infrastructure | 🌍 Fully Open-Source |
+| 🏎️ Hourly Benchmarks | 📊 Interactive Charts | 🔁 Zero Infrastructure | 🌍 Fully Open-Source |
 |:---:|:---:|:---:|:---:|
-| Run via GitHub Actions | Response time, throughput & trends | Static site + free CI/CD | Fork and self-host in minutes |
+| Automatic via GitHub Actions | Response time, throughput & trends | Static site + free CI/CD | Fork and self-host in minutes |
 
 </div>
 
@@ -70,7 +70,7 @@ In your forked repo: **Settings → Secrets and variables → Actions → New re
 
 **Actions → Benchmark NVIDIA NIM Models → Run workflow**
 
-That's it — your dashboard is live! Run benchmarks on-demand from the Actions tab. ✨
+That's it — your dashboard auto-refreshes every hour. ✨
 
 ---
 
@@ -129,17 +129,17 @@ That's it — your dashboard is live! Run benchmarks on-demand from the Actions 
 ## 🏗️ How It Works
 
 ````
-┌──────────────────── GitHub Actions (manual trigger) ───────────────────┐
-│                                                                        │
-│   ┌─────────────────────┐        ┌─────────────────────┐                │
-│   │  Job 1 — Group A    │        │  Job 2 — Group B    │ (parallel)    │
-│   │  11 NIM models      │        │  11 NIM models      │                │
-│   └──────────┬──────────┘        └──────────┬──────────┘                │
-│              └──────────────┬───────────────┘                           │
+┌──────────────────── GitHub Actions (every hour) ────────────────────┐
+│                                                                       │
+│   ┌─────────────────────┐        ┌─────────────────────┐              │
+│   │  Job 1 — Group A    │        │  Job 2 — Group B    │ (parallel)  │
+│   │  11 NIM models      │        │  11 NIM models      │              │
+│   └──────────┬──────────┘        └──────────┬──────────┘              │
+│              └──────────────┬───────────────┘                         │
 │                    ┌────────▼────────┐                                 │
-│                    │  Merge + commit │ → history.db committed to repo  │
+│                    │  Merge + commit │ → history.db committed to repo │
 │                    └─────────────────┘                                 │
-└────────────────────────────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────────────────────────┘
                               │
                    ┌──────────▼──────────┐
                    │  Cloudflare Pages     │ → auto-deploys on push
@@ -148,8 +148,6 @@ That's it — your dashboard is live! Run benchmarks on-demand from the Actions 
 ````
 
 **Parallel jobs = ~50% faster benchmarks** ⚡
-
-> **Note:** The benchmark runs on manual trigger (`workflow_dispatch`). Set up a [scheduled trigger](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule) if you want hourly runs. Cloudflare Pages automatically deploys the dashboard whenever `main` is updated.
 
 ---
 
@@ -177,14 +175,11 @@ ALL_MODELS = [
 </details>
 
 <details>
-<summary><b>Add a schedule (optional)</b></summary>
+<summary><b>Change the schedule</b></summary>
 
-The benchmark runs on manual trigger by default. To run automatically, add a `schedule` trigger to `.github/workflows/benchmark.yml`:
+Edit `.github/workflows/benchmark.yml`:
 ```yaml
-on:
-  schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours
-  workflow_dispatch:
+- cron: '0 */6 * * *'  # Every 6 hours instead of every hour
 ```
 </details>
 
