@@ -133,7 +133,7 @@ That's it — your dashboard auto-refreshes every hour. ✨
 │                                                                       │
 │   ┌─────────────────────┐        ┌─────────────────────┐              │
 │   │  Job 1 — Group A    │        │  Job 2 — Group B    │ (parallel)  │
-│   │  11 NIM models      │        │  11 NIM models      │              │
+│   │  N/2 NIM models     │        │  N/2 NIM models     │              │
 │   └──────────┬──────────┘        └──────────┬──────────┘              │
 │              └──────────────┬───────────────┘                         │
 │                    ┌────────▼────────┐                                 │
@@ -165,7 +165,22 @@ PROMPT = "Your custom prompt here"
 <details>
 <summary><b>Add or remove models</b></summary>
 
-Edit `ALL_MODELS` in `scripts/test_models.py`:
+Use the model management script:
+```bash
+# List models in DB vs test_models.py
+python scripts/manage_models.py list
+
+# Add a new model to ALL_MODELS
+python scripts/manage_models.py add your/custom-model
+
+# Remove a model from ALL_MODELS and purge its data from history.db
+python scripts/manage_models.py remove your/custom-model
+
+# Purge all DB models not in ALL_MODELS
+python scripts/manage_models.py purge
+```
+
+Or manually edit `ALL_MODELS` in `scripts/test_models.py`:
 ```python
 ALL_MODELS = [
     "your/custom-model",
