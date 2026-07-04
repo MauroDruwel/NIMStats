@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from db_utils import HISTORY_DB, init_schema  # noqa: E402
+from db_utils import HISTORY_DB, init_schema, _get_or_create  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HISTORY_JSON = REPO_ROOT / "history.json"
@@ -44,9 +44,6 @@ def main() -> int:
         removed_entries += len(run.get("models", [])) - len(models)
 
         summary = run.get("summary", {})
-        success_count = sum(1 for m in models if m.get("success"))
-        total_count = len(models)
-
         fastest_model = summary.get("fastestModel")
         fastest_time = summary.get("fastestTime", 0) or 0
         if fastest_model in REMOVED_MODELS:
@@ -59,31 +56,35 @@ def main() -> int:
                 fastest_model = "N/A"
                 fastest_time = 0
 
+        prompt_id = _get_or_create(conn, "prompts", "text", run.get("prompt"))
+        fastest_model_id = _get_or_create(conn, "models", "name", fastest_model) if fastest_model and fastest_model != "N/A" else None
+
         cur = conn.execute(
-            """INSERT INTO runs (timestamp, prompt, success_count, total_models, fastest_model, fastest_time)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (run.get("timestamp"), run.get("prompt"), success_count, total_count, fastest_model, fastest_time),
+            """INSERT INTO runs (timestamp, prompt_id, fastest_model_id, fastest_time)
+               VALUES (?, ?, ?, ?)""",
+            (run.get("timestamp"), prompt_id, fastest_model_id, fastest_time),
         )
         run_id = cur.lastrowid
-        conn.executemany(
-            """INSERT INTO model_results
-               (run_id, model, success, error, response_time, tokens_generated, total_tokens, response)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            [
+
+        for m in models:
+            model_id = _get_or_create(conn, "models", "name", m.get("model"))
+            error_id = _get_or_create(conn, "errors", "text", m.get("error"))
+            conn.execute(
+                """INSERT INTO model_results
+                   (run_id, model_id, success, error_id, response_time, tokens_generated, total_tokens)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
                 (
                     run_id,
-                    m.get("model"),
+                    model_id,
                     1 if m.get("success") else 0,
-                    m.get("error"),
+                    error_id,
                     m.get("responseTime"),
                     m.get("tokensGenerated"),
                     m.get("totalTokens"),
-                    m.get("response"),
-                )
-                for m in models
-            ],
-        )
+                ),
+            )
 
+    conn.execute("VACUUM")
     conn.commit()
 
     run_count = conn.execute("SELECT COUNT(*) FROM runs").fetchone()[0]
