@@ -26,7 +26,7 @@ def init_db_schema(conn: sqlite3.Connection) -> None:
 def fetch_intelligence_from_api(api_key: str) -> dict[str, float]:
     """Fetch model ratings from Artificial Analysis API."""
     print("Fetching intelligence scores from Artificial Analysis API...")
-    url = "https://artificialanalysis.ai/api/v2/language/models"
+    url = "https://artificialanalysis.ai/api/v2/data/llms/models"
     headers = {
         "x-api-key": api_key,
         "User-Agent": "NIMStats Benchmark (GitHub Action)"
@@ -45,6 +45,7 @@ def fetch_intelligence_from_api(api_key: str) -> dict[str, float]:
                 
                 evals = item.get("evaluations", {})
                 score = (
+                    evals.get("artificial_analysis_intelligence_index") or
                     evals.get("intelligence_index") or
                     evals.get("intelligence") or
                     evals.get("quality_index") or
@@ -69,24 +70,42 @@ def fetch_intelligence_from_api(api_key: str) -> dict[str, float]:
 
 
 def fuzzy_match_score(model_name: str, api_scores: dict[str, float]) -> float | None:
-    """Fuzzy match NIMStats model name to Artificial Analysis keys."""
+    """Fuzzy match NIMStats model name to Artificial Analysis keys using token overlap."""
     clean_name = model_name.split("/")[-1].lower() if "/" in model_name else model_name.lower()
     
-    # Exact match on cleaned name
-    if clean_name in api_scores:
-        return api_scores[clean_name]
+    import re
+    # Tokenize the clean name
+    tokens = set(re.findall(r'[a-z0-9]+', clean_name))
+    if not tokens:
+        return None
         
-    # Match replacing characters
-    normalized = clean_name.replace(".", "-").replace("_", "-")
-    if normalized in api_scores:
-        return api_scores[normalized]
-        
-    # Check if NIMStats name contains the API key, or vice-versa
+    best_match = None
+    best_score = 0.0
+    
     for key, val in api_scores.items():
-        if key in clean_name or clean_name in key:
-            return val
-            
-    return None
+        key_tokens = set(re.findall(r'[a-z0-9]+', key.lower()))
+        if not key_tokens:
+            continue
+        overlap = tokens.intersection(key_tokens)
+        
+        is_subset = key_tokens.issubset(tokens)
+        ratio = len(overlap) / len(tokens)
+        
+        if is_subset or ratio >= 0.60:
+            # Enforce strict model size checks if present (e.g., 70b, 90b, 49b)
+            size_tokens_clean = [t for t in tokens if re.match(r'^\d+b$', t)]
+            size_tokens_key = [t for t in key_tokens if re.match(r'^\d+b$', t)]
+            if size_tokens_clean and size_tokens_key:
+                if size_tokens_clean[0] != size_tokens_key[0]:
+                    continue  # Size mismatch, skip
+                    
+            # Score by overlap size, and break ties with ratio
+            score = len(overlap) + ratio
+            if score > best_score:
+                best_score = score
+                best_match = val
+                
+    return best_match
 
 
 def main() -> int:
