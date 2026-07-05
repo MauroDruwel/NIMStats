@@ -69,6 +69,11 @@ jobs:
           mv scripts/results-group2/results.json scripts/results-group2.json || true
           python3 scripts/merge_results.py
       
+      - name: Fetch and update Artificial Analysis intelligence scores
+        env:
+          ARTIFICIAL_ANALYSIS_API_KEY: ${{ secrets.ARTIFICIAL_ANALYSIS_API_KEY }}
+        run: python3 scripts/update_intelligence.py
+
       - name: Generate top model endpoint
         run: python3 scripts/generate_best.py
       

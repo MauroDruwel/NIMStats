@@ -76,6 +76,19 @@
         </div>
       </div>
       <div class="kpi-grid" id="kpi-grid"></div>
+
+      <!-- Intelligence & Capability Analysis -->
+      <div class="chart-row chart-row-2" style="margin-bottom:20px">
+        <div class="card">
+          <div class="card-title"><span class="dot" style="background:var(--purple)"></span>Model Intelligence Index</div>
+          <div class="chart-wrap" style="position:relative"><canvas id="chart-intelligence-bar"></canvas><div id="overview-no-intel" class="no-data" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-dim)">⚠️ Supply ARTIFICIAL_ANALYSIS_API_KEY to load benchmark scores</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Intelligence vs. Throughput (Value Frontier)</div>
+          <div class="chart-wrap" style="position:relative"><canvas id="chart-intelligence-scatter"></canvas><div id="overview-no-scatter" class="no-data" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-dim)">⚠️ Supply ARTIFICIAL_ANALYSIS_API_KEY to load value frontier</div></div>
+        </div>
+      </div>
+
       <div class="chart-row chart-row-2" style="margin-bottom:20px">
         <div class="card">
           <div class="card-title"><span class="dot"></span>Success Count per Run</div>
@@ -130,6 +143,7 @@
               <th data-col="model">Model</th>
               <th data-col="score">Score <span class="sort-arrow">↓</span></th>
               <th data-col="uptime">Uptime <span class="sort-arrow"></span></th>
+              <th data-col="intelligence">Intel <span class="sort-arrow"></span></th>
               <th data-col="avgTime">Avg Time <span class="sort-arrow"></span></th>
               <th data-col="bestTime">Best Time <span class="sort-arrow"></span></th>
               <th data-col="avgTps">Throughput <span class="sort-arrow"></span></th>
@@ -172,6 +186,22 @@
       </div>
       <div class="explorer-header" id="explorer-header"></div>
       <div class="stats-row" id="explorer-stats"></div>
+
+      <!-- Model Capability & Benchmark Profile -->
+      <div class="chart-row chart-row-2" style="margin-bottom:20px">
+        <div class="card">
+          <div class="card-title"><span class="dot" style="background:var(--success)"></span>Model Capability Breakdown (Radar)</div>
+          <div style="position:relative;height:280px;display:flex;align-items:center;justify-content:center">
+            <canvas id="chart-explorer-radar"></canvas>
+            <div id="explorer-no-radar" class="no-data" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-dim)">⚠️ Supply ARTIFICIAL_ANALYSIS_API_KEY to view radar capabilities</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="dot" style="background:var(--warning)"></span>Model Performance vs. Global Average</div>
+          <div class="chart-wrap" style="position:relative"><canvas id="chart-explorer-comparison"></canvas><div id="explorer-no-comparison" class="no-data" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-dim)">⚠️ Supply ARTIFICIAL_ANALYSIS_API_KEY to view comparison stats</div></div>
+        </div>
+      </div>
+
       <div class="chart-row chart-row-2" style="margin-bottom:20px">
         <div class="card">
           <div class="card-title"><span class="dot"></span>Response Time History</div>

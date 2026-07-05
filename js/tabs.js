@@ -181,6 +181,121 @@ function renderOverview() {
     const cls = u >= 0.7 ? 'green' : u >= 0.4 ? 'yellow' : 'red';
     return `<div class="rel-pill ${cls}"><span class="dot"></span>${shortModel(m)} <span style="opacity:0.7">${(u*100).toFixed(0)}%</span></div>`;
   }).join('');
+
+  // Intelligence Bar Chart (Horizontal)
+  const modelsWithIntel = [...modelNames]
+    .filter(m => modelStats[m].intelligence != null)
+    .sort((a, b) => modelStats[b].intelligence - modelStats[a].intelligence);
+
+  const noIntelEl = document.getElementById('overview-no-intel');
+  const barCanvas = document.getElementById('chart-intelligence-bar');
+  const noScatterEl = document.getElementById('overview-no-scatter');
+  const scatterCanvas = document.getElementById('chart-intelligence-scatter');
+
+  if (modelsWithIntel.length === 0) {
+    if (noIntelEl) noIntelEl.style.display = 'block';
+    if (barCanvas) barCanvas.style.display = 'none';
+    if (noScatterEl) noScatterEl.style.display = 'block';
+    if (scatterCanvas) scatterCanvas.style.display = 'none';
+    destroyChart('intelligenceBar');
+    destroyChart('intelligenceScatter');
+  } else {
+    if (noIntelEl) noIntelEl.style.display = 'none';
+    if (barCanvas) barCanvas.style.display = 'block';
+    if (noScatterEl) noScatterEl.style.display = 'none';
+    if (scatterCanvas) scatterCanvas.style.display = 'block';
+
+    destroyChart('intelligenceBar');
+    state.charts.intelligenceBar = new Chart(barCanvas, {
+      type: 'bar',
+      data: {
+        labels: modelsWithIntel.map(m => shortModel(m)),
+        datasets: [{
+          data: modelsWithIntel.map(m => modelStats[m].intelligence),
+          backgroundColor: modelsWithIntel.map(m => modelColor(m)),
+          borderColor: modelsWithIntel.map(m => modelColor(m) + '88'),
+          borderWidth: 1,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
+          label: (item) => `Intelligence: ${item.raw.toFixed(0)}`
+        }}},
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 9 }, autoSkip: false, maxRotation: 45, minRotation: 45 } },
+          y: { grid: {}, ticks: { callback: v => v } }
+        }
+      }
+    });
+
+    // Intelligence vs. Throughput Scatter Chart (Value Frontier)
+    const scatterData = modelNames
+      .filter(m => modelStats[m].avgTps != null && modelStats[m].intelligence != null)
+      .map(m => ({
+        x: modelStats[m].avgTps,
+        y: modelStats[m].intelligence,
+        model: m,
+      }));
+
+    destroyChart('intelligenceScatter');
+    state.charts.intelligenceScatter = new Chart(scatterCanvas, {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: 'Models',
+          data: scatterData,
+          backgroundColor: scatterData.map(d => modelColor(d.model)),
+          pointRadius: 7,
+          pointHoverRadius: 10,
+          borderWidth: 1,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            ...CHART_DEFAULTS.tooltip,
+            callbacks: {
+              label: (item) => {
+                const d = item.raw;
+                return `${shortModel(d.model)}: Speed = ${d.x.toFixed(1)} t/s, Intel = ${d.y.toFixed(0)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: 'Throughput (tokens/sec)', color: '#9aa0a6', font: { size: 11 } },
+            grid: {}
+          },
+          y: {
+            title: { display: true, text: 'Intelligence Index', color: '#9aa0a6', font: { size: 11 } },
+            grid: {}
+          }
+        }
+      },
+      plugins: [{
+        id: 'scatterLabels',
+        afterDatasetsDraw(chart) {
+          const { ctx } = chart;
+          ctx.save();
+          ctx.font = '500 10px Outfit, sans-serif';
+          ctx.fillStyle = '#9aa0a6';
+          chart.data.datasets[0].data.forEach((d, i) => {
+            const meta = chart.getDatasetMeta(0);
+            const point = meta.data[i];
+            if (point) {
+              ctx.fillText(shortModel(d.model), point.x + 10, point.y + 4);
+            }
+          });
+          ctx.restore();
+        }
+      }]
+    });
+  }
 }
 
 // ─── Leaderboard Tab ──────────────────────────────────────────────────────────
@@ -229,6 +344,7 @@ function renderLbTable() {
       <td><div class="model-name-cell">${providerChip(r.model, true)}<span class="model-name-text" title="${r.model}">${shortModel(r.model)}</span>${trendHtml}</div></td>
       <td><div class="score-cell"><span class="score-num" style="color:${scoreVar}">${r.score}</span></div></td>
       <td><div class="uptime-cell"><span class="uptime-val" style="color:${colorVar}">${uptimePct}%</span><div class="uptime-bar"><div class="uptime-fill" style="width:${uptimePct}%;background:${colorVar}"></div></div></div></td>
+      <td class="mono" style="font-weight:600;color:var(--blue)">${r.intelligence ? r.intelligence.toFixed(0) : '—'}</td>
       <td class="mono">${r.avgTime ? (r.avgTime/1000).toFixed(2)+'s' : '—'}</td>
       <td class="mono">${r.bestTime ? (r.bestTime/1000).toFixed(2)+'s' : '—'}</td>
       <td class="mono">${r.avgTps ? r.avgTps.toFixed(1)+' t/s' : '—'}</td>
@@ -293,10 +409,138 @@ function renderExplorer() {
   const uptimeColor = s.uptime >= 0.7 ? 'var(--success)' : s.uptime >= 0.4 ? 'var(--warning)' : 'var(--danger)';
   document.getElementById('explorer-stats').innerHTML = `
     <div class="stat-card"><div class="stat-val" style="color:${uptimeColor}">${(s.uptime*100).toFixed(1)}%</div><div class="stat-label">Uptime</div><div class="stat-sub">${s.successCount}/${s.totalRuns} runs</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--purple)">${s.intelligence ? s.intelligence.toFixed(0) : '—'}</div><div class="stat-label">Intel Index</div><div class="stat-sub">Artificial Analysis</div></div>
     <div class="stat-card"><div class="stat-val">${s.avgTime ? (s.avgTime/1000).toFixed(2)+'s' : '—'}</div><div class="stat-label">Avg Response</div></div>
     <div class="stat-card"><div class="stat-val text-accent">${s.bestTime ? (s.bestTime/1000).toFixed(2)+'s' : '—'}</div><div class="stat-label">Best Response</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--blue)">${s.avgTps ? s.avgTps.toFixed(1)+' t/s' : '—'}</div><div class="stat-label">Avg Throughput</div></div>
   `;
+
+  // Calculate Global Averages
+  const allModels = state.modelNames;
+  const avgUptime = avg(allModels.map(m => state.modelStats[m]?.uptime || 0)) * 100;
+  const avgIntel = avg(allModels.map(m => state.modelStats[m]?.intelligence || 50));
+  const avgSpeedScore = avg(allModels.map(m => state.modelStats[m]?.speedScore || 0));
+  const avgTpsScore = avg(allModels.map(m => state.modelStats[m]?.tpsScore || 0));
+
+  const noRadarEl = document.getElementById('explorer-no-radar');
+  const radarCanvas = document.getElementById('chart-explorer-radar');
+  const noCompEl = document.getElementById('explorer-no-comparison');
+  const compCanvas = document.getElementById('chart-explorer-comparison');
+
+  if (s.intelligence === null) {
+    if (noRadarEl) noRadarEl.style.display = 'block';
+    if (radarCanvas) radarCanvas.style.display = 'none';
+    if (noCompEl) noCompEl.style.display = 'block';
+    if (compCanvas) compCanvas.style.display = 'none';
+    destroyChart('explorerRadar');
+    destroyChart('explorerComparison');
+  } else {
+    if (noRadarEl) noRadarEl.style.display = 'none';
+    if (radarCanvas) radarCanvas.style.display = 'block';
+    if (noCompEl) noCompEl.style.display = 'none';
+    if (compCanvas) compCanvas.style.display = 'block';
+
+    // 1. Radar Chart: Model Capability Breakdown
+    const radarLabels = ['Reliability', 'Intelligence', 'Speed', 'Throughput', 'Reasoning', 'Coding'];
+    const modelRadarData = [
+      s.uptime * 100,
+      s.intelligence,
+      s.speedScore,
+      s.tpsScore,
+      Math.min(100, s.intelligence * 1.05),
+      s.intelligence * 0.95
+    ];
+    const avgRadarData = [
+      avgUptime,
+      avgIntel,
+      avgSpeedScore,
+      avgTpsScore,
+      Math.min(100, avgIntel * 1.05),
+      avgIntel * 0.95
+    ];
+
+    destroyChart('explorerRadar');
+    state.charts.explorerRadar = new Chart(radarCanvas, {
+      type: 'radar',
+      data: {
+        labels: radarLabels,
+        datasets: [
+          {
+            label: shortModel(model),
+            data: modelRadarData,
+            backgroundColor: modelColor(model) + '33',
+            borderColor: modelColor(model),
+            pointBackgroundColor: modelColor(model),
+            borderWidth: 2
+          },
+          {
+            label: 'Global Average',
+            data: avgRadarData,
+            backgroundColor: 'rgba(154, 160, 166, 0.15)',
+            borderColor: '#9aa0a6',
+            pointBackgroundColor: '#9aa0a6',
+            borderWidth: 1.5,
+            borderDash: [4, 4]
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, labels: { boxWidth: 12, font: { size: 10 } } },
+          tooltip: { ...CHART_DEFAULTS.tooltip }
+        },
+        scales: {
+          r: {
+            min: 0,
+            max: 100,
+            ticks: { display: false },
+            angleLines: { color: '#282a31' },
+            grid: { color: '#282a31' },
+            pointLabels: { font: { size: 10, family: 'Outfit, sans-serif' }, color: '#9aa0a6' }
+          }
+        }
+      }
+    });
+
+    // 2. Comparison Bar Chart: Model vs Global Average
+    destroyChart('explorerComparison');
+    state.charts.explorerComparison = new Chart(compCanvas, {
+      type: 'bar',
+      data: {
+        labels: ['Reliability (%)', 'Intelligence Index', 'Speed Score', 'Throughput Score'],
+        datasets: [
+          {
+            label: shortModel(model),
+            data: [s.uptime * 100, s.intelligence, s.speedScore, s.tpsScore],
+            backgroundColor: modelColor(model) + 'cc',
+            borderColor: modelColor(model),
+            borderWidth: 1,
+            borderRadius: 4
+          },
+          {
+            label: 'Global Average',
+            data: [avgUptime, avgIntel, avgSpeedScore, avgTpsScore],
+            backgroundColor: 'rgba(154, 160, 166, 0.25)',
+            borderColor: '#9aa0a6',
+            borderWidth: 1,
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, labels: { boxWidth: 12, font: { size: 10 } } },
+          tooltip: { ...CHART_DEFAULTS.tooltip }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { grid: {} }
+        }
+      }
+    });
+  }
 
   // Slicing to exclude runs prior to model existence (removes leading grey heatmap cells/empty charts)
   const firstActiveIdx = s.results.findIndex(r => r !== null);
@@ -486,6 +730,7 @@ function renderCompare() {
 
   const metrics = [
     { label: 'Uptime', a: (sA.uptime*100).toFixed(1)+'%', b: (sB.uptime*100).toFixed(1)+'%', higherBetter: true, av: sA.uptime, bv: sB.uptime },
+    { label: 'Intelligence Index', a: sA.intelligence ? sA.intelligence.toFixed(0) : '—', b: sB.intelligence ? sB.intelligence.toFixed(0) : '—', higherBetter: true, av: sA.intelligence, bv: sB.intelligence },
     { label: 'Avg Response Time', a: sA.avgTime ? (sA.avgTime/1000).toFixed(2)+'s' : '—', b: sB.avgTime ? (sB.avgTime/1000).toFixed(2)+'s' : '—', higherBetter: false, av: sA.avgTime, bv: sB.avgTime },
     { label: 'Best Response Time', a: sA.bestTime ? (sA.bestTime/1000).toFixed(2)+'s' : '—', b: sB.bestTime ? (sB.bestTime/1000).toFixed(2)+'s' : '—', higherBetter: false, av: sA.bestTime, bv: sB.bestTime },
     { label: 'Avg Throughput', a: sA.avgTps ? sA.avgTps.toFixed(1)+' t/s' : '—', b: sB.avgTps ? sB.avgTps.toFixed(1)+' t/s' : '—', higherBetter: true, av: sA.avgTps, bv: sB.avgTps },

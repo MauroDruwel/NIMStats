@@ -7,7 +7,7 @@ function loadFromDb(db) {
      LEFT JOIN models m ON r.fastest_model_id = m.id
      ORDER BY r.timestamp DESC`
   );
-  if (!runsQ.length || !runsQ[0].values.length) return { runs: [] };
+  if (!runsQ.length || !runsQ[0].values.length) return { runs: [], modelIntel: {} };
 
   const runs = runsQ[0].values.map(([id, timestamp, prompt, fm, ft]) => ({
     _dbId: id,
@@ -42,13 +42,26 @@ function loadFromDb(db) {
     }
   }
 
+  // Load model intelligence
+  const modelIntel = {};
+  try {
+    const intelQ = db.exec("SELECT name, intelligence_score FROM models");
+    if (intelQ.length && intelQ[0].values.length) {
+      for (const [name, intel] of intelQ[0].values) {
+        modelIntel[name] = intel != null ? intel : 50.0;
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to read intelligence_score from database, using fallback:", err);
+  }
+
   // Derive success count and total models per run
   for (const run of runs) {
     run.summary.successCount = run.models.filter(m => m.success).length;
     run.summary.totalModels = run.models.length;
   }
 
-  return { runs };
+  return { runs, modelIntel };
 }
 
 // ─── Data Processing ──────────────────────────────────────────────────────────
@@ -56,6 +69,7 @@ function processData(data) {
   const runs = [...data.runs].reverse(); // chronological
   const modelNames = [...new Set(runs.flatMap(r => r.models.map(m => m.model)))];
   const modelStats = {};
+  const modelIntel = data.modelIntel || {};
 
   for (const model of modelNames) {
     const results = runs.map(run => run.models.find(m => m.model === model) || null);
@@ -80,6 +94,7 @@ function processData(data) {
       wins: 0,
       errors: {},
       lastSeen: null,
+      intelligence: modelIntel[model] != null ? modelIntel[model] : null,
     };
 
     // Last seen
@@ -117,7 +132,10 @@ function processData(data) {
       ? (1 - (s.avgTime - minTime) / Math.max(maxTime - minTime, 1)) * 100 : 0;
     const tpsScore = s.avgTps != null
       ? ((s.avgTps - minTps) / Math.max(maxTps - minTps, 1)) * 100 : 0;
-    s.score = Math.round(s.uptime * 40 + speedScore * 0.3 + tpsScore * 0.3);
+    s.speedScore = speedScore;
+    s.tpsScore = tpsScore;
+    // Revised 4-factor scoring: reliability (30%) + intelligence (30%) + speed (20%) + throughput (20%)
+    s.score = Math.round(s.uptime * 30 + speedScore * 0.2 + tpsScore * 0.2 + (s.intelligence / 100) * 30);
 
     // Trend
     const half = Math.floor(s.responseTimes.length / 2);
@@ -170,6 +188,7 @@ function recomputeStats() {
       wins: 0,
       errors: {},
       lastSeen: null,
+      intelligence: (state.modelIntel && state.modelIntel[model] != null) ? state.modelIntel[model] : null,
     };
 
     // Last seen
@@ -207,7 +226,10 @@ function recomputeStats() {
       ? (1 - (s.avgTime - minTime) / Math.max(maxTime - minTime, 1)) * 100 : 0;
     const tpsScore = s.avgTps != null
       ? ((s.avgTps - minTps) / Math.max(maxTps - minTps, 1)) * 100 : 0;
-    s.score = Math.round(s.uptime * 40 + speedScore * 0.3 + tpsScore * 0.3);
+    s.speedScore = speedScore;
+    s.tpsScore = tpsScore;
+    // Revised 4-factor scoring: reliability (30%) + intelligence (30%) + speed (20%) + throughput (20%)
+    s.score = Math.round(s.uptime * 30 + speedScore * 0.2 + tpsScore * 0.2 + (s.intelligence / 100) * 30);
 
     // Trend
     const half = Math.floor(s.responseTimes.length / 2);
