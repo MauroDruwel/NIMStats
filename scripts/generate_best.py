@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Generate best/index.json from history.db — the current #1 model by composite score.
 
-Scoring mirrors the dashboard: uptime (40%) + speed (30%) + throughput (30%).
+Scoring mirrors the dashboard:
+reliability (30%) + intelligence (30%) + speed (20%) + throughput (20%)
 """
 
 import json
@@ -24,8 +25,13 @@ def load_data(conn):
            ORDER BY r.timestamp ASC"""
     ).fetchall()
 
+    # Load model intelligence scores
+    models_intel = {}
+    for m_name, intel in conn.execute("SELECT name, intelligence_score FROM models").fetchall():
+        models_intel[m_name] = intel or 50.0
+
     if not runs_q:
-        return [], {}
+        return [], models_intel
 
     runs = []
     for run_id, ts, ft, fm in runs_q:
@@ -45,10 +51,10 @@ def load_data(conn):
                 for m, s, rt, tg in results_q
             ],
         })
-    return runs, {}
+    return runs, models_intel
 
 
-def compute_stats(runs):
+def compute_stats(runs, models_intel):
     model_names = sorted({m["model"] for r in runs for m in r["models"]})
     stats = {}
 
@@ -72,6 +78,7 @@ def compute_stats(runs):
             "avgTps": sum(tps_arr) / len(tps_arr) if tps_arr else None,
             "wins": 0,
             "lastSeen": None,
+            "intelligence": models_intel.get(model, 50.0)
         }
 
         for i in range(len(results) - 1, -1, -1):
@@ -102,7 +109,8 @@ def compute_stats(runs):
             if s["avgTps"] is not None
             else 0
         )
-        s["score"] = round(s["uptime"] * 40 + speed_score * 0.3 + tps_score * 0.3)
+        # Revised 4-factor scoring: reliability (30%) + intelligence (30%) + speed (20%) + throughput (20%)
+        s["score"] = round(s["uptime"] * 30 + speed_score * 0.2 + tps_score * 0.2 + (s["intelligence"] / 100) * 30)
 
     return stats
 
@@ -114,7 +122,7 @@ def main():
 
     conn = sqlite3.connect(str(HISTORY_DB))
     try:
-        runs, _ = load_data(conn)
+        runs, models_intel = load_data(conn)
         if not runs:
             print("No runs in history.db")
             OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
@@ -122,7 +130,7 @@ def main():
             OUTPUT_JSON.write_text(json.dumps(empty, indent=2), encoding="utf-8")
             OUTPUT_TXT.write_text("", encoding="utf-8")
             return 0
-        stats = compute_stats(runs)
+        stats = compute_stats(runs, models_intel)
         best_model = max(stats, key=lambda m: stats[m]["score"])
         s = stats[best_model]
         provider = best_model.split("/")[0]
@@ -130,6 +138,7 @@ def main():
             "best_model": best_model,
             "provider": provider,
             "score": s["score"],
+            "intelligence": s["intelligence"],
             "uptime": round(s["uptime"] * 100, 1),
             "avg_response_time_ms": s["avgTime"],
             "best_response_time_ms": s["bestTime"],

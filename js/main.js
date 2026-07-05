@@ -252,6 +252,7 @@ async function init() {
     const processed = processData(data);
     state.rawRuns = processed.runs; // chronological (oldest first)
     state.modelNames = processed.modelNames;
+    state.modelIntel = data.modelIntel || {};
 
     // Set initial limit and compute initial stats
     state.limit = '50';

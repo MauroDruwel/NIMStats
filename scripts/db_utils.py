@@ -19,7 +19,8 @@ def init_schema(conn: sqlite3.Connection) -> None:
         );
         CREATE TABLE IF NOT EXISTS models (
             id   INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE
+            name TEXT NOT NULL UNIQUE,
+            intelligence_score REAL DEFAULT NULL
         );
         CREATE TABLE IF NOT EXISTS errors (
             id   INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,6 +46,12 @@ def init_schema(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_runs_ts  ON runs(timestamp);
         CREATE INDEX IF NOT EXISTS idx_mr_model ON model_results(model_id);
     """)
+
+    # Ensure backward compatibility for existing databases
+    cursor = conn.execute("PRAGMA table_info(models)")
+    columns = [row[1] for row in cursor.fetchall()]
+    if "intelligence_score" not in columns:
+        conn.execute("ALTER TABLE models ADD COLUMN intelligence_score REAL DEFAULT NULL")
 
 
 def _get_or_create(conn: sqlite3.Connection, table: str, col: str, value: Any) -> int | None:

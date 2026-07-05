@@ -229,6 +229,7 @@ function renderLbTable() {
       <td><div class="model-name-cell">${providerChip(r.model, true)}<span class="model-name-text" title="${r.model}">${shortModel(r.model)}</span>${trendHtml}</div></td>
       <td><div class="score-cell"><span class="score-num" style="color:${scoreVar}">${r.score}</span></div></td>
       <td><div class="uptime-cell"><span class="uptime-val" style="color:${colorVar}">${uptimePct}%</span><div class="uptime-bar"><div class="uptime-fill" style="width:${uptimePct}%;background:${colorVar}"></div></div></div></td>
+      <td class="mono" style="font-weight:600;color:var(--blue)">${r.intelligence ? r.intelligence.toFixed(0) : '—'}</td>
       <td class="mono">${r.avgTime ? (r.avgTime/1000).toFixed(2)+'s' : '—'}</td>
       <td class="mono">${r.bestTime ? (r.bestTime/1000).toFixed(2)+'s' : '—'}</td>
       <td class="mono">${r.avgTps ? r.avgTps.toFixed(1)+' t/s' : '—'}</td>
@@ -293,6 +294,7 @@ function renderExplorer() {
   const uptimeColor = s.uptime >= 0.7 ? 'var(--success)' : s.uptime >= 0.4 ? 'var(--warning)' : 'var(--danger)';
   document.getElementById('explorer-stats').innerHTML = `
     <div class="stat-card"><div class="stat-val" style="color:${uptimeColor}">${(s.uptime*100).toFixed(1)}%</div><div class="stat-label">Uptime</div><div class="stat-sub">${s.successCount}/${s.totalRuns} runs</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--purple)">${s.intelligence ? s.intelligence.toFixed(0) : '—'}</div><div class="stat-label">Intel Index</div><div class="stat-sub">Artificial Analysis</div></div>
     <div class="stat-card"><div class="stat-val">${s.avgTime ? (s.avgTime/1000).toFixed(2)+'s' : '—'}</div><div class="stat-label">Avg Response</div></div>
     <div class="stat-card"><div class="stat-val text-accent">${s.bestTime ? (s.bestTime/1000).toFixed(2)+'s' : '—'}</div><div class="stat-label">Best Response</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--blue)">${s.avgTps ? s.avgTps.toFixed(1)+' t/s' : '—'}</div><div class="stat-label">Avg Throughput</div></div>
@@ -486,6 +488,7 @@ function renderCompare() {
 
   const metrics = [
     { label: 'Uptime', a: (sA.uptime*100).toFixed(1)+'%', b: (sB.uptime*100).toFixed(1)+'%', higherBetter: true, av: sA.uptime, bv: sB.uptime },
+    { label: 'Intelligence Index', a: sA.intelligence ? sA.intelligence.toFixed(0) : '—', b: sB.intelligence ? sB.intelligence.toFixed(0) : '—', higherBetter: true, av: sA.intelligence, bv: sB.intelligence },
     { label: 'Avg Response Time', a: sA.avgTime ? (sA.avgTime/1000).toFixed(2)+'s' : '—', b: sB.avgTime ? (sB.avgTime/1000).toFixed(2)+'s' : '—', higherBetter: false, av: sA.avgTime, bv: sB.avgTime },
     { label: 'Best Response Time', a: sA.bestTime ? (sA.bestTime/1000).toFixed(2)+'s' : '—', b: sB.bestTime ? (sB.bestTime/1000).toFixed(2)+'s' : '—', higherBetter: false, av: sA.bestTime, bv: sB.bestTime },
     { label: 'Avg Throughput', a: sA.avgTps ? sA.avgTps.toFixed(1)+' t/s' : '—', b: sB.avgTps ? sB.avgTps.toFixed(1)+' t/s' : '—', higherBetter: true, av: sA.avgTps, bv: sB.avgTps },
