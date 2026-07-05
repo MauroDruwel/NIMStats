@@ -132,6 +132,8 @@ function processData(data) {
       ? (1 - (s.avgTime - minTime) / Math.max(maxTime - minTime, 1)) * 100 : 0;
     const tpsScore = s.avgTps != null
       ? ((s.avgTps - minTps) / Math.max(maxTps - minTps, 1)) * 100 : 0;
+    s.speedScore = speedScore;
+    s.tpsScore = tpsScore;
     // Revised 4-factor scoring: reliability (30%) + intelligence (30%) + speed (20%) + throughput (20%)
     s.score = Math.round(s.uptime * 30 + speedScore * 0.2 + tpsScore * 0.2 + (s.intelligence / 100) * 30);
 
@@ -224,6 +226,8 @@ function recomputeStats() {
       ? (1 - (s.avgTime - minTime) / Math.max(maxTime - minTime, 1)) * 100 : 0;
     const tpsScore = s.avgTps != null
       ? ((s.avgTps - minTps) / Math.max(maxTps - minTps, 1)) * 100 : 0;
+    s.speedScore = speedScore;
+    s.tpsScore = tpsScore;
     // Revised 4-factor scoring: reliability (30%) + intelligence (30%) + speed (20%) + throughput (20%)
     s.score = Math.round(s.uptime * 30 + speedScore * 0.2 + tpsScore * 0.2 + (s.intelligence / 100) * 30);
 

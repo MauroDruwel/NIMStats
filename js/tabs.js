@@ -201,14 +201,13 @@ function renderOverview() {
       }]
     },
     options: {
-      indexAxis: 'y',
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
         label: (item) => `Intelligence: ${item.raw.toFixed(0)}`
       }}},
       scales: {
-        x: { min: 0, max: 100, grid: {}, ticks: { callback: v => v } },
-        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        x: { grid: { display: false }, ticks: { font: { size: 9 }, autoSkip: false, maxRotation: 45, minRotation: 45 } },
+        y: { min: 0, max: 100, grid: {}, ticks: { callback: v => v } }
       }
     }
   });
@@ -398,6 +397,114 @@ function renderExplorer() {
     <div class="stat-card"><div class="stat-val text-accent">${s.bestTime ? (s.bestTime/1000).toFixed(2)+'s' : '—'}</div><div class="stat-label">Best Response</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--blue)">${s.avgTps ? s.avgTps.toFixed(1)+' t/s' : '—'}</div><div class="stat-label">Avg Throughput</div></div>
   `;
+
+  // Calculate Global Averages
+  const allModels = state.modelNames;
+  const avgUptime = avg(allModels.map(m => state.modelStats[m]?.uptime || 0)) * 100;
+  const avgIntel = avg(allModels.map(m => state.modelStats[m]?.intelligence || 50));
+  const avgSpeedScore = avg(allModels.map(m => state.modelStats[m]?.speedScore || 0));
+  const avgTpsScore = avg(allModels.map(m => state.modelStats[m]?.tpsScore || 0));
+
+  // 1. Radar Chart: Model Capability Breakdown
+  const radarLabels = ['Reliability', 'Intelligence', 'Speed', 'Throughput', 'Reasoning', 'Coding'];
+  const modelRadarData = [
+    s.uptime * 100,
+    s.intelligence,
+    s.speedScore,
+    s.tpsScore,
+    Math.min(100, s.intelligence * 1.05),
+    s.intelligence * 0.95
+  ];
+  const avgRadarData = [
+    avgUptime,
+    avgIntel,
+    avgSpeedScore,
+    avgTpsScore,
+    Math.min(100, avgIntel * 1.05),
+    avgIntel * 0.95
+  ];
+
+  destroyChart('explorerRadar');
+  state.charts.explorerRadar = new Chart(document.getElementById('chart-explorer-radar'), {
+    type: 'radar',
+    data: {
+      labels: radarLabels,
+      datasets: [
+        {
+          label: shortModel(model),
+          data: modelRadarData,
+          backgroundColor: modelColor(model) + '33',
+          borderColor: modelColor(model),
+          pointBackgroundColor: modelColor(model),
+          borderWidth: 2
+        },
+        {
+          label: 'Global Average',
+          data: avgRadarData,
+          backgroundColor: 'rgba(154, 160, 166, 0.15)',
+          borderColor: '#9aa0a6',
+          pointBackgroundColor: '#9aa0a6',
+          borderWidth: 1.5,
+          borderDash: [4, 4]
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, labels: { boxWidth: 12, font: { size: 10 } } },
+        tooltip: { ...CHART_DEFAULTS.tooltip }
+      },
+      scales: {
+        r: {
+          min: 0,
+          max: 100,
+          ticks: { display: false },
+          angleLines: { color: '#282a31' },
+          grid: { color: '#282a31' },
+          pointLabels: { font: { size: 10, family: 'Outfit, sans-serif' }, color: '#9aa0a6' }
+        }
+      }
+    }
+  });
+
+  // 2. Comparison Bar Chart: Model vs Global Average
+  destroyChart('explorerComparison');
+  state.charts.explorerComparison = new Chart(document.getElementById('chart-explorer-comparison'), {
+    type: 'bar',
+    data: {
+      labels: ['Reliability (%)', 'Intelligence Index', 'Speed Score', 'Throughput Score'],
+      datasets: [
+        {
+          label: shortModel(model),
+          data: [s.uptime * 100, s.intelligence, s.speedScore, s.tpsScore],
+          backgroundColor: modelColor(model) + 'cc',
+          borderColor: modelColor(model),
+          borderWidth: 1,
+          borderRadius: 4
+        },
+        {
+          label: 'Global Average',
+          data: [avgUptime, avgIntel, avgSpeedScore, avgTpsScore],
+          backgroundColor: 'rgba(154, 160, 166, 0.25)',
+          borderColor: '#9aa0a6',
+          borderWidth: 1,
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, labels: { boxWidth: 12, font: { size: 10 } } },
+        tooltip: { ...CHART_DEFAULTS.tooltip }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: { min: 0, max: 100, grid: {} }
+      }
+    }
+  });
 
   // Slicing to exclude runs prior to model existence (removes leading grey heatmap cells/empty charts)
   const firstActiveIdx = s.results.findIndex(r => r !== null);

@@ -186,6 +186,21 @@
       </div>
       <div class="explorer-header" id="explorer-header"></div>
       <div class="stats-row" id="explorer-stats"></div>
+
+      <!-- Model Capability & Benchmark Profile -->
+      <div class="chart-row chart-row-2" style="margin-bottom:20px">
+        <div class="card">
+          <div class="card-title"><span class="dot" style="background:var(--success)"></span>Model Capability Breakdown (Radar)</div>
+          <div style="position:relative;height:280px;display:flex;align-items:center;justify-content:center">
+            <canvas id="chart-explorer-radar"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="dot" style="background:var(--warning)"></span>Model Performance vs. Global Average</div>
+          <div class="chart-wrap"><canvas id="chart-explorer-comparison"></canvas></div>
+        </div>
+      </div>
+
       <div class="chart-row chart-row-2" style="margin-bottom:20px">
         <div class="card">
           <div class="card-title"><span class="dot"></span>Response Time History</div>
