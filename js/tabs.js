@@ -181,6 +181,105 @@ function renderOverview() {
     const cls = u >= 0.7 ? 'green' : u >= 0.4 ? 'yellow' : 'red';
     return `<div class="rel-pill ${cls}"><span class="dot"></span>${shortModel(m)} <span style="opacity:0.7">${(u*100).toFixed(0)}%</span></div>`;
   }).join('');
+
+  // Intelligence Bar Chart (Horizontal)
+  const modelsWithIntel = [...modelNames]
+    .filter(m => modelStats[m].intelligence != null)
+    .sort((a, b) => modelStats[b].intelligence - modelStats[a].intelligence);
+
+  destroyChart('intelligenceBar');
+  state.charts.intelligenceBar = new Chart(document.getElementById('chart-intelligence-bar'), {
+    type: 'bar',
+    data: {
+      labels: modelsWithIntel.map(m => shortModel(m)),
+      datasets: [{
+        data: modelsWithIntel.map(m => modelStats[m].intelligence),
+        backgroundColor: modelsWithIntel.map(m => modelColor(m)),
+        borderColor: modelsWithIntel.map(m => modelColor(m) + '88'),
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
+        label: (item) => `Intelligence: ${item.raw.toFixed(0)}`
+      }}},
+      scales: {
+        x: { min: 0, max: 100, grid: {}, ticks: { callback: v => v } },
+        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Intelligence vs. Throughput Scatter Chart (Value Frontier)
+  const scatterData = modelNames
+    .filter(m => modelStats[m].avgTps != null && modelStats[m].intelligence != null)
+    .map(m => ({
+      x: modelStats[m].avgTps,
+      y: modelStats[m].intelligence,
+      model: m,
+    }));
+
+  destroyChart('intelligenceScatter');
+  state.charts.intelligenceScatter = new Chart(document.getElementById('chart-intelligence-scatter'), {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Models',
+        data: scatterData,
+        backgroundColor: scatterData.map(d => modelColor(d.model)),
+        pointRadius: 7,
+        pointHoverRadius: 10,
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...CHART_DEFAULTS.tooltip,
+          callbacks: {
+            label: (item) => {
+              const d = item.raw;
+              return `${shortModel(d.model)}: Speed = ${d.x.toFixed(1)} t/s, Intel = ${d.y.toFixed(0)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Throughput (tokens/sec)', color: '#9aa0a6', font: { size: 11 } },
+          grid: {}
+        },
+        y: {
+          min: 40,
+          max: 100,
+          title: { display: true, text: 'Intelligence Index', color: '#9aa0a6', font: { size: 11 } },
+          grid: {}
+        }
+      }
+    },
+    plugins: [{
+      id: 'scatterLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        ctx.save();
+        ctx.font = '500 10px Outfit, sans-serif';
+        ctx.fillStyle = '#9aa0a6';
+        chart.data.datasets[0].data.forEach((d, i) => {
+          const meta = chart.getDatasetMeta(0);
+          const point = meta.data[i];
+          if (point) {
+            ctx.fillText(shortModel(d.model), point.x + 10, point.y + 4);
+          }
+        });
+        ctx.restore();
+      }
+    }]
+  });
 }
 
 // ─── Leaderboard Tab ──────────────────────────────────────────────────────────
