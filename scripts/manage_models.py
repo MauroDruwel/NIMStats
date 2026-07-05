@@ -132,37 +132,56 @@ def cmd_purge() -> int:
     db_models = [r[0] for r in conn.execute("SELECT name FROM models ORDER BY name").fetchall()]
     orphans = [m for m in db_models if m not in configured]
 
-    if not orphans:
-        print("No orphaned models found. DB is clean!")
-        conn.close()
-        return 0
+    purged_models = 0
+    total_results = 0
 
-    print(f"Found {len(orphans)} orphaned model(s):")
-    total = 0
-    for m in orphans:
-        row = conn.execute("SELECT id FROM models WHERE name = ?", (m,)).fetchone()
-        mid = row[0]
-        count = conn.execute("SELECT COUNT(*) FROM model_results WHERE model_id = ?", (mid,)).fetchone()[0]
-        total += count
-        print(f"  {m:50} {count} results")
+    if orphans:
+        print(f"Found {len(orphans)} orphaned model(s):")
+        for m in orphans:
+            row = conn.execute("SELECT id FROM models WHERE name = ?", (m,)).fetchone()
+            mid = row[0]
+            count = conn.execute("SELECT COUNT(*) FROM model_results WHERE model_id = ?", (mid,)).fetchone()[0]
+            total_results += count
+            print(f"  {m:50} {count} results")
 
-    print(f"\nPurging {total} total model_results...")
+        print(f"\nPurging {total_results} total model_results...")
 
-    for m in orphans:
-        row = conn.execute("SELECT id FROM models WHERE name = ?", (m,)).fetchone()
-        mid = row[0]
-        conn.execute(
-            "UPDATE runs SET fastest_model_id = NULL, fastest_time = NULL WHERE fastest_model_id = ?",
-            (mid,),
-        )
-        conn.execute("DELETE FROM model_results WHERE model_id = ?", (mid,))
-        conn.execute("DELETE FROM models WHERE id = ?", (mid,))
+        for m in orphans:
+            row = conn.execute("SELECT id FROM models WHERE name = ?", (m,)).fetchone()
+            mid = row[0]
+            conn.execute(
+                "UPDATE runs SET fastest_model_id = NULL, fastest_time = NULL WHERE fastest_model_id = ?",
+                (mid,),
+            )
+            conn.execute("DELETE FROM model_results WHERE model_id = ?", (mid,))
+            conn.execute("DELETE FROM models WHERE id = ?", (mid,))
+            purged_models += 1
 
-    conn.commit()
-    conn.execute("VACUUM")
+    # Clean up orphaned errors and prompts
+    cur_errors = conn.execute(
+        "DELETE FROM errors WHERE id NOT IN (SELECT DISTINCT error_id FROM model_results WHERE error_id IS NOT NULL)"
+    )
+    cur_prompts = conn.execute(
+        "DELETE FROM prompts WHERE id NOT IN (SELECT DISTINCT prompt_id FROM runs)"
+    )
+
+    any_changes = purged_models > 0 or cur_errors.rowcount > 0 or cur_prompts.rowcount > 0
+
+    if any_changes:
+        conn.commit()
+        conn.execute("VACUUM")
+        print("\nPurge complete:")
+        if purged_models > 0:
+            print(f"  - Purged {purged_models} orphaned model(s) and {total_results} results.")
+        if cur_errors.rowcount > 0:
+            print(f"  - Cleaned up {cur_errors.rowcount} orphaned error message(s).")
+        if cur_prompts.rowcount > 0:
+            print(f"  - Cleaned up {cur_prompts.rowcount} orphaned prompt(s).")
+        print("Database VACUUMed and compacted successfully.")
+    else:
+        print("No orphaned models, errors, or prompts found. DB is clean!")
+
     conn.close()
-
-    print("Done! Purged orphaned models and VACUUMed history.db.")
     return 0
 
 
