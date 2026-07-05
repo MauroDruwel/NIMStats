@@ -225,7 +225,7 @@ function renderOverview() {
         }}},
         scales: {
           x: { grid: { display: false }, ticks: { font: { size: 9 }, autoSkip: false, maxRotation: 45, minRotation: 45 } },
-          y: { min: 0, max: 100, grid: {}, ticks: { callback: v => v } }
+          y: { grid: {}, ticks: { callback: v => v } }
         }
       }
     });
@@ -272,8 +272,6 @@ function renderOverview() {
             grid: {}
           },
           y: {
-            min: 40,
-            max: 100,
             title: { display: true, text: 'Intelligence Index', color: '#9aa0a6', font: { size: 11 } },
             grid: {}
           }
@@ -538,7 +536,7 @@ function renderExplorer() {
         },
         scales: {
           x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-          y: { min: 0, max: 100, grid: {} }
+          y: { grid: {} }
         }
       }
     });
