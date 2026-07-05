@@ -12,39 +12,6 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HISTORY_DB = REPO_ROOT / "history.db"
 
-# Robust fallback intelligence mapping for all tested models in NIMStats
-FALLBACK_INTELLIGENCE = {
-    # Frontier reasoning/flagship models
-    "meta/llama-4-maverick-17b-128e-instruct": 95.0,
-    "openai/gpt-oss-120b": 94.0,
-    "deepseek-ai/deepseek-v4-pro": 93.5,
-    "z-ai/glm-5.2": 91.0,
-    "mistralai/mistral-large-3-675b-instruct-2512": 88.0,
-    
-    # High-end open models
-    "qwen/qwen3.5-397b-a17b": 83.0,
-    "meta/llama-3.3-70b-instruct": 81.0,
-    "nvidia/nemotron-3-super-120b-a12b": 80.0,
-    "nvidia/llama-3.3-nemotron-super-49b-v1.5": 78.5,
-    
-    # Mid-range models
-    "google/gemma-4-31b-it": 74.0,
-    "moonshotai/kimi-k2.6": 72.0,
-    "mistralai/mistral-medium-3.5-128b": 70.0,
-    "qwen/qwen3.5-122b-a10b": 68.0,
-    "qwen/qwen3-next-80b-a3b-instruct": 67.0,
-    "meta/llama-3.2-90b-vision-instruct": 66.0,
-    "mistralai/mistral-small-4-119b-2603": 65.0,
-    
-    # Fast / Flash / Smaller models
-    "deepseek-ai/deepseek-v4-flash": 60.0,
-    "stepfun-ai/step-3.7-flash": 58.0,
-    "stepfun-ai/step-3.5-flash": 55.0,
-    "minimaxai/minimax-m3": 54.0,
-    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": 52.0,
-    "minimaxai/minimax-m2.7": 48.0,
-}
-
 
 def init_db_schema(conn: sqlite3.Connection) -> None:
     """Ensure the intelligence_score column exists in the models table."""
@@ -76,7 +43,6 @@ def fetch_intelligence_from_api(api_key: str) -> dict[str, float]:
                 slug = item.get("slug", "").lower()
                 name = item.get("name", "").lower()
                 
-                # Try finding any score related to intelligence/quality in evaluations
                 evals = item.get("evaluations", {})
                 score = (
                     evals.get("intelligence_index") or
@@ -89,7 +55,6 @@ def fetch_intelligence_from_api(api_key: str) -> dict[str, float]:
                 if score is not None:
                     try:
                         score_float = float(score)
-                        # Store by slug and name
                         if slug:
                             api_scores[slug] = score_float
                         if name:
@@ -99,13 +64,12 @@ def fetch_intelligence_from_api(api_key: str) -> dict[str, float]:
             
             return api_scores
     except Exception as e:
-        print(f"Warning: Failed to fetch from Artificial Analysis API ({e}). Using fallbacks.", file=sys.stderr)
+        print(f"Warning: Failed to fetch from Artificial Analysis API ({e}). Leaving scores as NULL/N/A.", file=sys.stderr)
         return {}
 
 
 def fuzzy_match_score(model_name: str, api_scores: dict[str, float]) -> float | None:
     """Fuzzy match NIMStats model name to Artificial Analysis keys."""
-    # Clean model name: meta/llama-3.3-70b-instruct -> llama-3.3-70b-instruct
     clean_name = model_name.split("/")[-1].lower() if "/" in model_name else model_name.lower()
     
     # Exact match on cleaned name
@@ -136,6 +100,9 @@ def main() -> int:
         
         # Check API Key
         api_key = os.environ.get("ARTIFICIAL_ANALYSIS_API_KEY")
+        if not api_key:
+            print("Warning: ARTIFICIAL_ANALYSIS_API_KEY env var is missing. Skipping API fetch (resetting scores to NULL/N/A).")
+            
         api_scores = fetch_intelligence_from_api(api_key) if api_key else {}
         
         # Query models
@@ -145,19 +112,11 @@ def main() -> int:
         for model in models:
             score = None
             
-            # 1. Try matching with API results
+            # Try matching with API results if we have them
             if api_scores:
                 score = fuzzy_match_score(model, api_scores)
                 
-            # 2. Fall back to local dataset
-            if score is None:
-                score = FALLBACK_INTELLIGENCE.get(model)
-                
-            # 3. Last fallback: default to 50 if nothing matches
-            if score is None:
-                score = 50.0
-                
-            # Update database record
+            # Update database record (None -> NULL in SQLite)
             conn.execute(
                 "UPDATE models SET intelligence_score = ? WHERE name = ?",
                 (score, model)

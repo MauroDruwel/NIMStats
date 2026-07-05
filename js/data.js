@@ -94,7 +94,7 @@ function processData(data) {
       wins: 0,
       errors: {},
       lastSeen: null,
-      intelligence: modelIntel[model] != null ? modelIntel[model] : 50.0,
+      intelligence: modelIntel[model] != null ? modelIntel[model] : null,
     };
 
     // Last seen
@@ -188,7 +188,7 @@ function recomputeStats() {
       wins: 0,
       errors: {},
       lastSeen: null,
-      intelligence: (state.modelIntel && state.modelIntel[model] != null) ? state.modelIntel[model] : 50.0,
+      intelligence: (state.modelIntel && state.modelIntel[model] != null) ? state.modelIntel[model] : null,
     };
 
     // Last seen
