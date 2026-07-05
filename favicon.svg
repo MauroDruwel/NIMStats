@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Rounded squircle background -->
+  <rect width="512" height="512" rx="128" fill="#18191d"/>
+  
+  <!-- Subtle center glow overlay -->
+  <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#76b900" stop-opacity="0.18"/>
+    <stop offset="100%" stop-color="#18191d" stop-opacity="0"/>
+  </radialGradient>
+  <rect width="512" height="512" rx="128" fill="url(#glow)"/>
+  
+  <!-- Group offset to center graphics slightly -->
+  <g transform="translate(10, 10)">
+    <!-- Pastel Benchmark Columns -->
+    <rect x="110" y="270" width="50" height="120" rx="14" fill="#8ab4f8"/>
+    <rect x="190" y="190" width="50" height="200" rx="14" fill="#f28b82"/>
+    <rect x="270" y="130" width="50" height="260" rx="14" fill="#81c995"/>
+    <rect x="350" y="230" width="50" height="160" rx="14" fill="#fdd663"/>
+    
+    <!-- Rising Connected Trend Line -->
+    <path d="M 135 270 L 215 190 L 295 130 L 375 230" stroke="#76b900" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="375" cy="230" r="18" fill="#76b900"/>
+  </g>
+</svg>

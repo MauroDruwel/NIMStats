@@ -3,257 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NIMStats — AI Model Benchmark Dashboard</title>
+<meta name="description" content="NIMStats - Real-time AI model benchmark dashboard monitoring response times, uptime, errors, and throughput for NIM deployments.">
+<meta name="keywords" content="AI, LLM, benchmarks, response time, NVIDIA NIM, model performance, OpenAI, Mistral, Qwen, leaderboard">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://nimstats.maurodruwel.be/">
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://nimstats.maurodruwel.be/">
+<meta property="og:title" content="NIMStats - AI Model Benchmark Dashboard">
+<meta property="og:description" content="Real-time performance tracking and head-to-head comparisons for top AI models.">
+<!-- Twitter -->
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:url" content="https://nimstats.maurodruwel.be/">
+<meta property="twitter:title" content="NIMStats - AI Model Benchmark Dashboard">
+<meta property="twitter:description" content="Real-time performance tracking and head-to-head comparisons for top AI models.">
+<title>NIMStats - AI Model Benchmark Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
-<style>
-:root {
-  --bg: #080810;
-  --bg-card: #0d0d1a;
-  --bg-card2: #121220;
-  --bg-hover: #181828;
-  --border: #1c1c2e;
-  --border-bright: #252538;
-  --accent: #76b900;
-  --accent-dim: rgba(118,185,0,0.12);
-  --accent-glow: 0 0 20px rgba(118,185,0,0.25);
-  --blue: #00c8ff;
-  --purple: #a855f7;
-  --text: #e2e2f0;
-  --text-dim: #8888aa;
-  --text-muted: #3a3a5a;
-  --success: #22c55e;
-  --success-dim: rgba(34,197,94,0.1);
-  --danger: #ef4444;
-  --danger-dim: rgba(239,68,68,0.1);
-  --warning: #f59e0b;
-  --radius: 12px;
-  --radius-sm: 8px;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{min-height:100vh;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.5;overflow-x:hidden}
-
-/* Animated background */
-body::before{content:'';position:fixed;inset:0;z-index:-1;background:
-  radial-gradient(ellipse 80% 60% at 20% 0%,rgba(118,185,0,0.06) 0%,transparent 60%),
-  radial-gradient(ellipse 60% 40% at 80% 100%,rgba(0,200,255,0.04) 0%,transparent 60%),
-  var(--bg);animation:bgShift 20s ease-in-out infinite alternate}
-@keyframes bgShift{
-  0%{background-position:0% 0%,100% 100%}
-  100%{background-position:5% 10%,95% 90%}
-}
-
-/* Nav */
-nav{position:sticky;top:0;z-index:200;background:rgba(8,8,16,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;padding:0 24px;gap:4px}
-.nav-brand{font-size:18px;font-weight:800;color:var(--accent);letter-spacing:-0.5px;margin-right:20px;white-space:nowrap}
-.nav-brand span{color:var(--text-dim);font-weight:300}
-.nav-tabs{display:flex;gap:2px;flex:1}
-.nav-tab{background:none;border:none;color:var(--text-dim);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;padding:8px 14px;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.2s;white-space:nowrap}
-.nav-tab:hover{color:var(--text);background:var(--bg-hover)}
-.nav-tab.active{color:var(--accent);background:var(--accent-dim)}
-.nav-status{margin-left:auto;font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
-
-/* Loading */
-#loading{position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);gap:20px}
-.spinner{width:48px;height:48px;border:3px solid var(--border-bright);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-#loading p{color:var(--text-dim);font-size:14px}
-#app{opacity:0;transition:opacity 0.4s}
-#app.visible{opacity:1}
-
-/* Error state */
-#error-state{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;text-align:center;padding:40px}
-#error-state .err-icon{font-size:48px}
-#error-state h2{color:var(--danger);font-size:20px}
-#error-state p{color:var(--text-dim);font-size:14px;max-width:400px}
-
-/* Main layout */
-main{max-width:1400px;margin:0 auto;padding:28px 24px}
-section[data-tab]{display:none}
-section[data-tab].active{display:block}
-
-/* KPI Cards */
-.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:28px}
-@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
-.kpi-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;transition:border-color 0.2s,box-shadow 0.2s}
-.kpi-card::before{content:'';position:absolute;inset:0;border-radius:var(--radius);background:linear-gradient(135deg,rgba(118,185,0,0.04),transparent);pointer-events:none}
-.kpi-card:hover{border-color:var(--border-bright);box-shadow:var(--accent-glow)}
-.kpi-icon{font-size:20px;margin-bottom:10px}
-.kpi-value{font-size:28px;font-weight:800;color:var(--text);font-family:'JetBrains Mono',monospace;line-height:1}
-.kpi-label{font-size:12px;color:var(--text-dim);margin-top:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
-.kpi-sub{font-size:11px;color:var(--accent);margin-top:4px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kpi-accent{color:var(--accent)}
-
-/* Cards */
-.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:border-color 0.2s}
-.card:hover{border-color:var(--border-bright)}
-.card-title{font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:20px;display:flex;align-items:center;gap:8px}
-.card-title .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);flex-shrink:0}
-
-/* Chart grids */
-.chart-row{display:grid;gap:20px;margin-bottom:20px}
-.chart-row-2{grid-template-columns:1fr 1fr}
-.chart-row-3{grid-template-columns:2fr 2fr 1.5fr}
-@media(max-width:900px){.chart-row-2,.chart-row-3{grid-template-columns:1fr}}
-.chart-wrap{position:relative;height:220px}
-.chart-wrap-lg{position:relative;height:260px}
-
-/* Reliability pills */
-.reliability-grid{display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
-.rel-pill{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid transparent;transition:all 0.2s;cursor:default}
-.rel-pill.green{background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.25);color:#22c55e}
-.rel-pill.yellow{background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.25);color:#f59e0b}
-.rel-pill.red{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:#ef4444}
-.rel-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
-
-/* Leaderboard */
-.table-controls{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.search-input{background:var(--bg-card);border:1px solid var(--border-bright);border-radius:var(--radius-sm);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:8px 14px;width:100%;max-width:280px;transition:border-color 0.2s;outline:none}
-.search-input:focus{border-color:var(--accent)}
-.search-input::placeholder{color:var(--text-muted)}
-.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{background:var(--bg-card2);color:var(--text-dim);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.6px;padding:12px 16px;text-align:left;cursor:pointer;user-select:none;white-space:nowrap;border-bottom:1px solid var(--border)}
-thead th:hover{color:var(--text)}
-thead th.sorted{color:var(--accent)}
-thead th .sort-arrow{margin-left:4px;opacity:0.5}
-thead th.sorted .sort-arrow{opacity:1}
-tbody tr{border-bottom:1px solid var(--border);transition:background 0.15s;cursor:pointer}
-tbody tr:hover{background:var(--bg-hover)}
-tbody tr:last-child{border-bottom:none}
-td{padding:10px 16px;color:var(--text);vertical-align:middle}
-.rank-num{color:var(--text-dim);font-weight:600;font-family:'JetBrains Mono',monospace;font-size:12px;width:32px}
-.rank-num.top3{color:var(--accent)}
-.provider-chip{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-right:6px;flex-shrink:0}
-.model-name-cell{display:flex;align-items:center;gap:0;max-width:240px}
-.model-name-text{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.score-cell{display:flex;align-items:center;gap:8px}
-.score-num{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px}
-.uptime-cell{display:flex;flex-direction:column;gap:4px;min-width:90px}
-.uptime-val{font-family:'JetBrains Mono',monospace;font-size:13px}
-.uptime-bar{height:3px;border-radius:2px;background:var(--border);overflow:hidden}
-.uptime-fill{height:100%;border-radius:2px;transition:width 0.6s ease}
-.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
-.trend-indicator{font-size:12px;font-weight:700}
-.trend-up{color:var(--success)}
-.trend-down{color:var(--danger)}
-.trend-flat{color:var(--text-dim)}
-
-/* Explorer */
-.model-selector-wrap{margin-bottom:24px}
-.model-selector-label{font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px}
-.model-select{width:100%;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:var(--radius);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;padding:12px 16px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238888aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;cursor:pointer;outline:none;transition:border-color 0.2s}
-.model-select:focus{border-color:var(--accent)}
-.model-select option{background:var(--bg-card2);color:var(--text)}
-.explorer-header{display:flex;align-items:center;gap:12px;margin-bottom:24px;padding:16px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius)}
-.explorer-header .provider-chip{font-size:11px;padding:3px 10px}
-.explorer-header h2{font-size:16px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace}
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
-@media(max-width:700px){.stats-row{grid-template-columns:repeat(2,1fr)}}
-.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;text-align:center}
-.stat-card .stat-val{font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text)}
-.stat-card .stat-label{font-size:11px;color:var(--text-dim);margin-top:4px;text-transform:uppercase;letter-spacing:0.5px}
-.stat-card .stat-sub{font-size:11px;color:var(--text-muted);margin-top:3px}
-
-/* Heatmap */
-.heatmap{display:grid;gap:4px;margin-top:12px}
-.heatmap-cell{aspect-ratio:1;border-radius:3px;position:relative;cursor:default;transition:transform 0.15s}
-.heatmap-cell:hover{transform:scale(1.3);z-index:10}
-.heatmap-cell.pass{background:rgba(34,197,94,0.6)}
-.heatmap-cell.fail{background:rgba(239,68,68,0.5)}
-.heatmap-cell.miss{background:var(--border)}
-
-/* Run history table */
-.run-table-wrap{overflow-x:auto}
-.run-table{width:100%;border-collapse:collapse;font-size:13px}
-.run-table th{background:var(--bg-card2);color:var(--text-dim);font-size:11px;text-transform:uppercase;letter-spacing:0.6px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);font-weight:600}
-.run-table td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
-.run-table tr:last-child td{border-bottom:none}
-.status-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
-.status-badge.ok{background:var(--success-dim);color:var(--success)}
-.status-badge.fail{background:var(--danger-dim);color:var(--danger)}
-
-/* Timeline */
-.timeline-controls{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-.run-badge{background:var(--accent-dim);border:1px solid rgba(118,185,0,0.3);color:var(--accent);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
-.filter-btns{display:flex;gap:6px}
-.filter-btn{background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);font-size:12px;padding:6px 14px;border-radius:20px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s}
-.filter-btn:hover{border-color:var(--border-bright);color:var(--text)}
-.filter-btn.active{background:var(--accent-dim);border-color:rgba(118,185,0,0.3);color:var(--accent)}
-.run-cards{display:flex;flex-direction:column;gap:10px}
-.run-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color 0.2s}
-.run-card:hover{border-color:var(--border-bright)}
-.run-card-header{display:flex;align-items:center;gap:16px;padding:14px 18px;cursor:pointer;user-select:none}
-.run-card-time{font-size:13px;font-weight:600;color:var(--text);font-family:'JetBrains Mono',monospace;min-width:130px}
-.run-success-badge{padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace}
-.run-success-badge.green{background:var(--success-dim);color:var(--success)}
-.run-success-badge.yellow{background:rgba(245,158,11,0.1);color:var(--warning)}
-.run-success-badge.red{background:var(--danger-dim);color:var(--danger)}
-.run-fastest{font-size:12px;color:var(--text-dim);margin-left:auto;display:flex;align-items:center;gap:6px}
-.run-fastest span{color:var(--accent);font-weight:500}
-.run-expand-arrow{color:var(--text-muted);transition:transform 0.2s;font-size:12px}
-.run-card.expanded .run-expand-arrow{transform:rotate(180deg)}
-.run-card-body{display:none;border-top:1px solid var(--border);padding:0}
-.run-card.expanded .run-card-body{display:block}
-.run-detail-table{width:100%;font-size:12px;border-collapse:collapse}
-.run-detail-table th{padding:8px 14px;background:var(--bg-card2);color:var(--text-dim);font-size:10px;text-transform:uppercase;letter-spacing:0.5px;text-align:left;font-weight:600;border-bottom:1px solid var(--border)}
-.run-detail-table td{padding:7px 14px;border-bottom:1px solid var(--border);color:var(--text)}
-.run-detail-table tr:last-child td{border-bottom:none}
-.run-prompt{font-size:12px;color:var(--text-dim);padding:10px 18px;border-top:1px solid var(--border);font-style:italic;background:var(--bg-card2)}
-
-/* Compare */
-.compare-selectors{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:end;margin-bottom:24px}
-.selector-group label{font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:8px}
-.swap-btn{background:var(--bg-card);border:1px solid var(--border-bright);color:var(--text-dim);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;align-self:flex-end;flex-shrink:0}
-.swap-btn:hover{border-color:var(--accent);color:var(--accent);transform:rotate(180deg)}
-.h2h-table{width:100%;border-collapse:collapse}
-.h2h-table tr{border-bottom:1px solid var(--border)}
-.h2h-table tr:last-child{border-bottom:none}
-.h2h-table td{padding:10px 16px;font-size:13px}
-.h2h-table .h2h-label{color:var(--text-dim);font-size:12px;text-align:center}
-.h2h-table .h2h-metric{color:var(--text-dim);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;text-align:center;width:120px}
-.h2h-val-a,.h2h-val-b{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;text-align:center}
-.h2h-val-a.winner,.h2h-val-b.winner{color:var(--accent)}
-.h2h-row:hover{background:var(--bg-hover)}
-
-
-/* Section headers */
-.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.section-title{font-size:20px;font-weight:700;color:var(--text)}
-.section-sub{font-size:13px;color:var(--text-dim)}
-
-/* Scrollbar */
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
-
-/* Responsive */
-@media(max-width:700px){
-  nav{flex-wrap:wrap;height:auto;padding:8px 12px 6px}
-  .nav-tabs{flex-wrap:wrap;gap:3px;width:100%}
-  .nav-brand{margin-right:4px}
-  .nav-tab{font-size:12px;padding:5px 8px}
-  .nav-status{width:100%;margin-left:0;margin-top:4px;text-align:left}
-  main{padding:16px 12px}
-  .compare-selectors{grid-template-columns:1fr}
-  .swap-btn{justify-self:center;width:100%;border-radius:var(--radius-sm)}
-  .run-card-header{flex-wrap:wrap;gap:8px}
-  .run-fastest{margin-left:0;width:100%}
-  .table-controls{flex-direction:column;align-items:stretch}
-  .h2h-table td{padding:8px 10px}
-}
-
-/* Utility */
-.flex{display:flex}.gap-2{gap:8px}.gap-3{gap:12px}.items-center{align-items:center}
-.text-green{color:var(--success)}.text-red{color:var(--danger)}.text-yellow{color:var(--warning)}.text-accent{color:var(--accent)}.text-dim{color:var(--text-dim)}.text-blue{color:var(--blue)}
-.mt-4{margin-top:16px}.mb-4{margin-bottom:16px}
-.no-data{color:var(--text-dim);font-size:13px;text-align:center;padding:32px;font-style:italic}
-</style>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -272,6 +44,10 @@ td{padding:10px 16px;color:var(--text);vertical-align:middle}
       <button class="nav-tab" data-goto="timeline">⏱ Timeline</button>
       <button class="nav-tab" data-goto="compare">⚔️ Compare</button>
     </div>
+    <button class="theme-toggle" id="theme-toggle" title="Toggle Theme" aria-label="Toggle theme">
+      <span class="theme-icon-light">☀️</span>
+      <span class="theme-icon-dark">🌙</span>
+    </button>
     <div class="nav-status" id="nav-status"></div>
   </nav>
 
@@ -288,6 +64,15 @@ td{padding:10px 16px;color:var(--text);vertical-align:middle}
         <div>
           <div class="section-title">Dashboard Overview</div>
           <div class="section-sub" id="overview-sub"></div>
+        </div>
+        <div class="filter-controls">
+          <span class="filter-label">Runs limit:</span>
+          <div class="filter-btns">
+            <button class="filter-btn" data-limit="30">30 runs</button>
+            <button class="filter-btn" data-limit="50">50 runs</button>
+            <button class="filter-btn" data-limit="100">100 runs</button>
+            <button class="filter-btn" data-limit="all">All</button>
+          </div>
         </div>
       </div>
       <div class="kpi-grid" id="kpi-grid"></div>
@@ -322,7 +107,16 @@ td{padding:10px 16px;color:var(--text);vertical-align:middle}
       <div class="section-header mb-4">
         <div>
           <div class="section-title">Model Leaderboard</div>
-          <div class="section-sub">Ranked by composite score — click a row to explore that model</div>
+          <div class="section-sub">Ranked by composite score - click a row to explore that model</div>
+        </div>
+        <div class="filter-controls">
+          <span class="filter-label">Runs limit:</span>
+          <div class="filter-btns">
+            <button class="filter-btn" data-limit="30">30 runs</button>
+            <button class="filter-btn" data-limit="50">50 runs</button>
+            <button class="filter-btn" data-limit="100">100 runs</button>
+            <button class="filter-btn" data-limit="all">All</button>
+          </div>
         </div>
       </div>
       <div class="table-controls">
@@ -350,9 +144,31 @@ td{padding:10px 16px;color:var(--text);vertical-align:middle}
 
     <!-- EXPLORER -->
     <section data-tab="explorer">
-      <div class="model-selector-wrap">
-        <div class="model-selector-label">Select Model</div>
-        <select class="model-select" id="explorer-select"></select>
+      <div class="explorer-selectors mb-4">
+        <div class="model-selector-wrap">
+          <div class="model-selector-label">Select Model</div>
+          <div class="custom-select-container" id="explorer-custom-select">
+            <button class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
+              <span class="trigger-content">Select a model...</span>
+              <span class="trigger-arrow">▼</span>
+            </button>
+            <div class="custom-select-dropdown">
+              <div class="dropdown-search-wrap">
+                <input type="text" class="dropdown-search-input" placeholder="🔍 Search models...">
+              </div>
+              <ul class="dropdown-list" role="listbox"></ul>
+            </div>
+          </div>
+        </div>
+        <div class="filter-controls">
+          <span class="filter-label">Runs limit:</span>
+          <div class="filter-btns">
+            <button class="filter-btn" data-limit="30">30 runs</button>
+            <button class="filter-btn" data-limit="50">50 runs</button>
+            <button class="filter-btn" data-limit="100">100 runs</button>
+            <button class="filter-btn" data-limit="all">All</button>
+          </div>
+        </div>
       </div>
       <div class="explorer-header" id="explorer-header"></div>
       <div class="stats-row" id="explorer-stats"></div>
@@ -365,7 +181,7 @@ td{padding:10px 16px;color:var(--text);vertical-align:middle}
           <div class="card-title"><span class="dot"></span>Error Breakdown</div>
           <div style="position:relative;height:260px;display:flex;align-items:center;justify-content:center">
             <canvas id="chart-explorer-errors"></canvas>
-            <div id="explorer-no-errors" class="no-data" style="display:none">🎉 100% Success Rate — No Errors!</div>
+            <div id="explorer-no-errors" class="no-data" style="display:none">🎉 100% Success Rate - No Errors!</div>
           </div>
         </div>
       </div>
@@ -406,17 +222,51 @@ td{padding:10px 16px;color:var(--text);vertical-align:middle}
     <!-- COMPARE -->
     <section data-tab="compare">
       <div class="section-header mb-4">
-        <div><div class="section-title">Model Comparison</div><div class="section-sub">Head-to-head analysis across all runs</div></div>
+        <div>
+          <div class="section-title">Model Comparison</div>
+          <div class="section-sub">Head-to-head analysis</div>
+        </div>
+        <div class="filter-controls">
+          <span class="filter-label">Runs limit:</span>
+          <div class="filter-btns">
+            <button class="filter-btn" data-limit="30">30 runs</button>
+            <button class="filter-btn" data-limit="50">50 runs</button>
+            <button class="filter-btn" data-limit="100">100 runs</button>
+            <button class="filter-btn" data-limit="all">All</button>
+          </div>
+        </div>
       </div>
       <div class="compare-selectors">
         <div class="selector-group">
           <label>Model A</label>
-          <select class="model-select" id="compare-a"></select>
+          <div class="custom-select-container" id="compare-a-custom-select">
+            <button class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
+              <span class="trigger-content">Select model...</span>
+              <span class="trigger-arrow">▼</span>
+            </button>
+            <div class="custom-select-dropdown">
+              <div class="dropdown-search-wrap">
+                <input type="text" class="dropdown-search-input" placeholder="🔍 Search models...">
+              </div>
+              <ul class="dropdown-list" role="listbox"></ul>
+            </div>
+          </div>
         </div>
         <button class="swap-btn" id="swap-btn" title="Swap models">⇄</button>
         <div class="selector-group">
           <label>Model B</label>
-          <select class="model-select" id="compare-b"></select>
+          <div class="custom-select-container" id="compare-b-custom-select">
+            <button class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
+              <span class="trigger-content">Select model...</span>
+              <span class="trigger-arrow">▼</span>
+            </button>
+            <div class="custom-select-dropdown">
+              <div class="dropdown-search-wrap">
+                <input type="text" class="dropdown-search-input" placeholder="🔍 Search models...">
+              </div>
+              <ul class="dropdown-list" role="listbox"></ul>
+            </div>
+          </div>
         </div>
       </div>
       <div class="chart-row chart-row-2" style="margin-bottom:20px">
@@ -438,1044 +288,10 @@ td{padding:10px 16px;color:var(--text);vertical-align:middle}
 </div>
 
 
-<script>
-// ─── Constants ───────────────────────────────────────────────────────────────
-const PROVIDER_META = {
-  'deepseek-ai': { name: 'DeepSeek', color: '#4d9de0' },
-  'z-ai':        { name: 'Z-AI',     color: '#11a883' },
-  'minimaxai':   { name: 'MiniMax',  color: '#7c3aed' },
-  'nvidia':      { name: 'NVIDIA',   color: '#76b900' },
-  'moonshotai':  { name: 'Moonshot', color: '#0891b2' },
-  'openai':      { name: 'OpenAI',   color: '#2563eb' },
-  'google':      { name: 'Google',   color: '#ea4335' },
-  'qwen':        { name: 'Qwen',     color: '#d97706' },
-  'mistralai':   { name: 'Mistral',  color: '#7e22ce' },
-  'meta':        { name: 'Meta',     color: '#1877f2' },
-};
-
-const MODEL_PALETTE = [
-  '#76b900','#00c8ff','#ff6b35','#a855f7','#22c55e',
-  '#f59e0b','#ec4899','#06b6d4','#84cc16','#6366f1',
-  '#10b981','#3b82f6','#ef4444','#8b5cf6','#14b8a6',
-  '#eab308','#d946ef','#fb923c','#e11d48','#64748b'
-];
-
-const CHART_DEFAULTS = {
-  tooltip: {
-    backgroundColor: '#1a1a2e',
-    borderColor: '#2a2a40',
-    borderWidth: 1,
-    titleColor: '#e2e2f0',
-    bodyColor: '#8888aa',
-    padding: 12,
-    cornerRadius: 8,
-    displayColors: true
-  }
-};
-
-Chart.defaults.color = '#666688';
-Chart.defaults.borderColor = '#1c1c2e';
-Chart.defaults.font.family = "'Inter', sans-serif";
-
-// ─── State ────────────────────────────────────────────────────────────────────
-const state = {
-  db: null,
-  runs: [],
-  modelNames: [],
-  modelStats: {},
-  charts: {},
-  currentTab: 'overview',
-  explorerModel: 'qwen/qwen3-coder-480b-a35b-instruct',
-  lbSort: { col: 'score', dir: 'desc' },
-  lbFilter: '',
-  timelineFilter: 'all'
-};
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function avg(arr) {
-  if (!arr.length) return 0;
-  return arr.reduce((a, b) => a + b, 0) / arr.length;
-}
-
-function fmtMs(ms) {
-  if (ms == null) return '—';
-  return (ms / 1000).toFixed(2) + 's';
-}
-
-function fmtTps(tps) {
-  if (tps == null || tps <= 0) return '—';
-  return tps.toFixed(1) + ' t/s';
-}
-
-function fmtPct(v) {
-  return (v * 100).toFixed(1) + '%';
-}
-
-function shortModel(m) {
-  return m.split('/')[1] || m;
-}
-
-function getProvider(m) {
-  return m.split('/')[0];
-}
-
-function providerMeta(m) {
-  const p = getProvider(m);
-  return PROVIDER_META[p] || { name: p, color: '#666688' };
-}
-
-function providerChip(m, small) {
-  const pm = providerMeta(m);
-  const s = small ? 'font-size:10px;padding:1px 6px' : 'font-size:11px;padding:2px 8px';
-  return `<span class="provider-chip" style="background:${pm.color}22;color:${pm.color};border:1px solid ${pm.color}44;${s}">${pm.name}</span>`;
-}
-
-function fmtTimestamp(ts) {
-  const d = new Date(ts);
-  return d.toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
-}
-
-function fmtTimestampShort(ts) {
-  const d = new Date(ts);
-  const mo = d.toLocaleString('en', { month: 'short' });
-  const day = d.getDate();
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${mo}${day} ${hh}:${mm}`;
-}
-
-function categorizeError(err) {
-  if (!err) return 'Unknown';
-  if (err.includes('timed out')) return 'Timeout';
-  if (err.includes('JSON')) return 'JSON Error';
-  if (err.includes('404')) return 'Not Found (404)';
-  if (err.includes('410')) return 'Gone (410)';
-  if (err.includes('closed connection')) return 'Connection Closed';
-  return 'Other Error';
-}
-
-function modelColor(model) {
-  const idx = state.modelNames.indexOf(model);
-  return MODEL_PALETTE[idx % MODEL_PALETTE.length];
-}
-
-function destroyChart(key) {
-  if (state.charts[key]) {
-    state.charts[key].destroy();
-    delete state.charts[key];
-  }
-}
-
-function animateCounter(el, target, duration = 1200, decimals = 0, suffix = '') {
-  const start = performance.now();
-  const update = (now) => {
-    const elapsed = now - start;
-    const progress = Math.min(elapsed / duration, 1);
-    const ease = 1 - Math.pow(1 - progress, 3);
-    const val = target * ease;
-    el.textContent = (decimals ? val.toFixed(decimals) : Math.round(val)) + suffix;
-    if (progress < 1) requestAnimationFrame(update);
-  };
-  requestAnimationFrame(update);
-}
-
-function sparklineSVG(values, width = 80, height = 24, color = '#76b900') {
-  const valid = values.filter(v => v !== null);
-  if (valid.length < 2) return `<svg width="${width}" height="${height}"></svg>`;
-  const min = Math.min(...valid), max = Math.max(...valid);
-  const range = max - min || 1;
-  const pts = [];
-  let lastX = 0, lastY = 0;
-  values.forEach((v, i) => {
-    if (v === null) return;
-    const x = (i / (values.length - 1)) * width;
-    const y = height - 2 - ((v - min) / range) * (height - 4);
-    pts.push([x, y]);
-    lastX = x; lastY = y;
-  });
-  if (pts.length < 2) return `<svg width="${width}" height="${height}"></svg>`;
-  const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
-  return `<svg width="${width}" height="${height}" style="overflow:visible"><path d="${d}" stroke="${color}" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2.5" fill="${color}"/></svg>`;
-}
-
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ─── SQLite Data Loader ───────────────────────────────────────────────────────
-function loadFromDb(db) {
-  const runsQ = db.exec(
-    `SELECT r.id, r.timestamp, p.text, m.name, r.fastest_time
-     FROM runs r
-     JOIN prompts p ON r.prompt_id = p.id
-     LEFT JOIN models m ON r.fastest_model_id = m.id
-     ORDER BY r.timestamp DESC`
-  );
-  if (!runsQ.length || !runsQ[0].values.length) return { runs: [] };
-
-  const runs = runsQ[0].values.map(([id, timestamp, prompt, fm, ft]) => ({
-    _dbId: id,
-    timestamp,
-    prompt,
-    models: [],
-    summary: { fastestModel: fm || 'N/A', fastestTime: ft || 0 }
-  }));
-
-  const runById = new Map(runs.map((r, i) => [r._dbId, i]));
-
-  const resQ = db.exec(
-    `SELECT mr.run_id, m.name, mr.success, e.text, mr.response_time, mr.tokens_generated, mr.total_tokens
-     FROM model_results mr
-     JOIN models m ON mr.model_id = m.id
-     LEFT JOIN errors e ON mr.error_id = e.id
-     ORDER BY mr.run_id ASC`
-  );
-  if (resQ.length && resQ[0].values.length) {
-    for (const [run_id, model, success, error, rt, tg, tt] of resQ[0].values) {
-      const idx = runById.get(run_id);
-      if (idx !== undefined) {
-        runs[idx].models.push({
-          model,
-          success: success === 1,
-          error: error || null,
-          responseTime: rt,
-          tokensGenerated: tg,
-          totalTokens: tt,
-        });
-      }
-    }
-  }
-
-  // Derive success count and total models per run
-  for (const run of runs) {
-    run.summary.successCount = run.models.filter(m => m.success).length;
-    run.summary.totalModels = run.models.length;
-  }
-
-  return { runs };
-}
-
-// ─── Data Processing ──────────────────────────────────────────────────────────
-function processData(data) {
-  const runs = [...data.runs].reverse(); // chronological
-  const modelNames = [...new Set(runs.flatMap(r => r.models.map(m => m.model)))];
-  const modelStats = {};
-
-  for (const model of modelNames) {
-    const results = runs.map(run => run.models.find(m => m.model === model) || null);
-    const successes = results.filter(r => r && r.success);
-    const testedResults = results.filter(r => r !== null);
-    const times = successes.map(r => r.responseTime).filter(t => t > 0);
-    const tpsArr = successes
-      .filter(r => r.responseTime > 0)
-      .map(r => r.tokensGenerated / (r.responseTime / 1000));
-
-    modelStats[model] = {
-      results,
-      totalRuns: testedResults.length,
-      successCount: successes.length,
-      uptime: testedResults.length ? successes.length / testedResults.length : 0,
-      responseTimes: results.map(r => (r && r.success && r.responseTime > 0) ? r.responseTime : null),
-      throughputs: results.map(r => (r && r.success && r.responseTime > 0)
-        ? r.tokensGenerated / (r.responseTime / 1000) : null),
-      avgTime: times.length ? avg(times) : null,
-      bestTime: times.length ? Math.min(...times) : null,
-      avgTps: tpsArr.length ? avg(tpsArr) : null,
-      wins: 0,
-      errors: {},
-      lastSeen: null,
-    };
-
-    // Last seen
-    for (let i = results.length - 1; i >= 0; i--) {
-      if (results[i] && results[i].success) {
-        modelStats[model].lastSeen = runs[i]?.timestamp || null;
-        break;
-      }
-    }
-
-    // Errors
-    results.filter(r => r && !r.success && r.error).forEach(r => {
-      const t = categorizeError(r.error);
-      modelStats[model].errors[t] = (modelStats[model].errors[t] || 0) + 1;
-    });
-  }
-
-  // Wins
-  runs.forEach(run => {
-    const fm = run.summary?.fastestModel;
-    if (fm && modelStats[fm]) modelStats[fm].wins++;
-  });
-
-  // Scores
-  const validTimes = modelNames.filter(m => modelStats[m].avgTime != null).map(m => modelStats[m].avgTime);
-  const validTps = modelNames.filter(m => modelStats[m].avgTps != null).map(m => modelStats[m].avgTps);
-  const maxTime = validTimes.length ? Math.max(...validTimes) : 1;
-  const minTime = validTimes.length ? Math.min(...validTimes) : 0;
-  const maxTps = validTps.length ? Math.max(...validTps) : 1;
-  const minTps = validTps.length ? Math.min(...validTps) : 0;
-
-  for (const model of modelNames) {
-    const s = modelStats[model];
-    const speedScore = s.avgTime != null
-      ? (1 - (s.avgTime - minTime) / Math.max(maxTime - minTime, 1)) * 100 : 0;
-    const tpsScore = s.avgTps != null
-      ? ((s.avgTps - minTps) / Math.max(maxTps - minTps, 1)) * 100 : 0;
-    s.score = Math.round(s.uptime * 40 + speedScore * 0.3 + tpsScore * 0.3);
-
-    // Trend: compare first half vs second half avg response time
-    const half = Math.floor(s.responseTimes.length / 2);
-    const firstHalf = s.responseTimes.slice(0, half).filter(v => v != null);
-    const secondHalf = s.responseTimes.slice(half).filter(v => v != null);
-    if (firstHalf.length && secondHalf.length) {
-      const diff = avg(secondHalf) - avg(firstHalf);
-      s.trend = diff < -500 ? 'up' : diff > 500 ? 'down' : 'flat';
-    } else {
-      s.trend = 'flat';
-    }
-  }
-
-  return { runs, modelNames, modelStats };
-}
-
-// ─── Overview Tab ─────────────────────────────────────────────────────────────
-function renderOverview() {
-  const { runs, modelNames, modelStats } = state;
-
-  // KPIs
-  const totalRuns = runs.length;
-  const allUptimes = modelNames.map(m => modelStats[m].uptime);
-  const avgSuccessRate = avg(allUptimes) * 100;
-
-  let bestTimeModel = null, bestTimeVal = Infinity;
-  let bestTpsModel = null, bestTpsVal = 0;
-  for (const m of modelNames) {
-    const s = modelStats[m];
-    if (s.avgTime != null && s.avgTime < bestTimeVal) { bestTimeVal = s.avgTime; bestTimeModel = m; }
-    if (s.avgTps != null && s.avgTps > bestTpsVal) { bestTpsVal = s.avgTps; bestTpsModel = m; }
-  }
-  const mostReliable = [...modelNames].sort((a, b) => modelStats[b].uptime - modelStats[a].uptime)[0];
-
-  const kpiData = [
-    { icon: '🔁', label: 'Total Runs', val: totalRuns, sub: `${runs[0]?.timestamp?.slice(0,10)} → ${runs[runs.length-1]?.timestamp?.slice(0,10)}`, decimals: 0 },
-    { icon: '✅', label: 'Avg Success Rate', val: avgSuccessRate, suffix: '%', decimals: 1, sub: 'across all runs & models' },
-    { icon: '⚡', label: 'Avg Best Response', val: bestTimeVal / 1000, suffix: 's', decimals: 2, sub: bestTimeModel ? shortModel(bestTimeModel) : '' },
-    { icon: '🚀', label: 'Avg Best Throughput', val: bestTpsVal, suffix: ' t/s', decimals: 1, sub: bestTpsModel ? shortModel(bestTpsModel) : '' },
-    { icon: '🏅', label: 'Most Reliable', val: (modelStats[mostReliable]?.uptime || 0) * 100, suffix: '%', decimals: 1, sub: mostReliable ? shortModel(mostReliable) : '' },
-  ];
-
-  const kpiGrid = document.getElementById('kpi-grid');
-  kpiGrid.innerHTML = kpiData.map(k => `
-    <div class="kpi-card">
-      <div class="kpi-icon">${k.icon}</div>
-      <div class="kpi-value" id="kpi-val-${k.label.replace(/\s/g,'_')}">0${k.suffix||''}</div>
-      <div class="kpi-label">${k.label}</div>
-      <div class="kpi-sub">${k.sub}</div>
-    </div>
-  `).join('');
-
-  kpiData.forEach(k => {
-    const el = document.getElementById('kpi-val-' + k.label.replace(/\s/g,'_'));
-    if (el) animateCounter(el, k.val, 1400, k.decimals || 0, k.suffix || '');
-  });
-
-  document.getElementById('overview-sub').textContent =
-    `${totalRuns} benchmark runs · ${modelNames.length} models · ${runs[0]?.timestamp?.slice(0,10)} to ${runs[runs.length-1]?.timestamp?.slice(0,10)}`;
-
-  // Charts
-  const labels = runs.map(r => fmtTimestampShort(r.timestamp));
-  const successCounts = runs.map(r => r.summary?.successCount ?? r.models.filter(m => m.success).length);
-  const successRates = runs.map(r => {
-    const total = r.summary?.totalModels || r.models.length;
-    const succ = r.summary?.successCount ?? r.models.filter(m => m.success).length;
-    return (succ / total) * 100;
-  });
-
-  destroyChart('successCount');
-  state.charts.successCount = new Chart(document.getElementById('chart-success-count'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Successes',
-        data: successCounts,
-        borderColor: '#76b900',
-        backgroundColor: 'rgba(118,185,0,0.08)',
-        fill: true,
-        tension: 0.3,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        borderWidth: 2,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-        title: (items) => `Run ${items[0].dataIndex + 1}: ${labels[items[0].dataIndex]}`
-      }}},
-      scales: {
-        x: { display: false },
-        y: { min: 0, max: 20, grid: { color: '#1c1c2e' }, ticks: { stepSize: 5 } }
-      }
-    }
-  });
-
-  destroyChart('successRate');
-  state.charts.successRate = new Chart(document.getElementById('chart-success-rate'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Success %',
-        data: successRates,
-        borderColor: '#00c8ff',
-        backgroundColor: 'rgba(0,200,255,0.06)',
-        fill: true,
-        tension: 0.3,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        borderWidth: 2,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-        label: (item) => `${item.raw.toFixed(1)}% success`
-      }}},
-      scales: {
-        x: { display: false },
-        y: { min: 0, max: 100, grid: { color: '#1c1c2e' }, ticks: { callback: v => v + '%' } }
-      }
-    }
-  });
-
-  // Top 10 Fastest
-  const modelsWithTime = modelNames
-    .filter(m => modelStats[m].avgTime != null)
-    .sort((a, b) => modelStats[a].avgTime - modelStats[b].avgTime)
-    .slice(0, 10);
-
-  destroyChart('fastest');
-  state.charts.fastest = new Chart(document.getElementById('chart-fastest'), {
-    type: 'bar',
-    data: {
-      labels: modelsWithTime.map(m => shortModel(m)),
-      datasets: [{
-        data: modelsWithTime.map(m => modelStats[m].avgTime / 1000),
-        backgroundColor: modelsWithTime.map((m, i) => i === 0 ? '#76b900' : '#76b90055'),
-        borderColor: modelsWithTime.map((m, i) => i === 0 ? '#76b900' : '#76b90088'),
-        borderWidth: 1,
-        borderRadius: 4,
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-        label: (item) => `Avg: ${item.raw.toFixed(2)}s`
-      }}},
-      scales: {
-        x: { grid: { color: '#1c1c2e' }, ticks: { callback: v => v + 's' } },
-        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
-      }
-    }
-  });
-
-  // Top 10 Throughput
-  const modelsWithTps = modelNames
-    .filter(m => modelStats[m].avgTps != null)
-    .sort((a, b) => modelStats[b].avgTps - modelStats[a].avgTps)
-    .slice(0, 10);
-
-  destroyChart('throughput');
-  state.charts.throughput = new Chart(document.getElementById('chart-throughput'), {
-    type: 'bar',
-    data: {
-      labels: modelsWithTps.map(m => shortModel(m)),
-      datasets: [{
-        data: modelsWithTps.map(m => modelStats[m].avgTps),
-        backgroundColor: modelsWithTps.map((m, i) => i === 0 ? '#00c8ff' : '#00c8ff44'),
-        borderColor: modelsWithTps.map((m, i) => i === 0 ? '#00c8ff' : '#00c8ff88'),
-        borderWidth: 1,
-        borderRadius: 4,
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-        label: (item) => `${item.raw.toFixed(1)} tok/s`
-      }}},
-      scales: {
-        x: { grid: { color: '#1c1c2e' }, ticks: { callback: v => v + ' t/s' } },
-        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
-      }
-    }
-  });
-
-  // Reliability pills
-  const grid = document.getElementById('reliability-grid');
-  const sorted = [...modelNames].sort((a, b) => modelStats[b].uptime - modelStats[a].uptime);
-  grid.innerHTML = sorted.map(m => {
-    const u = modelStats[m].uptime;
-    const cls = u >= 0.7 ? 'green' : u >= 0.4 ? 'yellow' : 'red';
-    return `<div class="rel-pill ${cls}"><span class="dot"></span>${shortModel(m)} <span style="opacity:0.7">${(u*100).toFixed(0)}%</span></div>`;
-  }).join('');
-}
-
-// ─── Leaderboard Tab ──────────────────────────────────────────────────────────
-function renderLeaderboard() {
-  const { modelNames, modelStats } = state;
-  const scores = [...modelNames].sort((a, b) => modelStats[b].score - modelStats[a].score);
-  const ranks = {};
-  scores.forEach((m, i) => { ranks[m] = i + 1; });
-
-  state.lbData = modelNames.map(m => ({ model: m, rank: ranks[m], ...modelStats[m] }));
-  renderLbTable();
-}
-
-function renderLbTable() {
-  const { lbData, lbSort, lbFilter } = state;
-  if (!lbData) return;
-
-  let rows = [...lbData];
-  if (lbFilter) {
-    rows = rows.filter(r => r.model.toLowerCase().includes(lbFilter.toLowerCase()));
-  }
-
-  rows.sort((a, b) => {
-    let av = a[lbSort.col], bv = b[lbSort.col];
-    if (av == null) av = lbSort.dir === 'asc' ? Infinity : -Infinity;
-    if (bv == null) bv = lbSort.dir === 'asc' ? Infinity : -Infinity;
-    return lbSort.dir === 'asc' ? av - bv : bv - av;
-  });
-
-  const tbody = document.getElementById('lb-body');
-  tbody.innerHTML = rows.map((r, i) => {
-    const uptimePct = (r.uptime * 100).toFixed(1);
-    const uptimeColor = r.uptime >= 0.7 ? '#22c55e' : r.uptime >= 0.4 ? '#f59e0b' : '#ef4444';
-    const scoreColor = r.score >= 60 ? '#22c55e' : r.score >= 40 ? '#f59e0b' : '#ef4444';
-    const trendHtml = r.trend === 'up'
-      ? `<span class="trend-indicator trend-up" title="Improving">↑</span>`
-      : r.trend === 'down'
-      ? `<span class="trend-indicator trend-down" title="Declining">↓</span>`
-      : `<span class="trend-indicator trend-flat" title="Stable">→</span>`;
-    const last10 = r.responseTimes.slice(-10);
-    const spark = sparklineSVG(last10, 72, 22, modelColor(r.model));
-    const isTop3 = r.rank <= 3;
-
-    return `<tr data-model="${r.model}">
-      <td><span class="rank-num${isTop3?' top3':''}">${r.rank}</span></td>
-      <td><div class="model-name-cell">${providerChip(r.model, true)}<span class="model-name-text" title="${r.model}">${shortModel(r.model)}</span>${trendHtml}</div></td>
-      <td><div class="score-cell"><span class="score-num" style="color:${scoreColor}">${r.score}</span></div></td>
-      <td><div class="uptime-cell"><span class="uptime-val" style="color:${uptimeColor}">${uptimePct}%</span><div class="uptime-bar"><div class="uptime-fill" style="width:${uptimePct}%;background:${uptimeColor}"></div></div></div></td>
-      <td class="mono">${r.avgTime ? (r.avgTime/1000).toFixed(2)+'s' : '—'}</td>
-      <td class="mono">${r.bestTime ? (r.bestTime/1000).toFixed(2)+'s' : '—'}</td>
-      <td class="mono">${r.avgTps ? r.avgTps.toFixed(1)+' t/s' : '—'}</td>
-      <td class="mono text-accent">${r.wins}</td>
-      <td>${spark}</td>
-    </tr>`;
-  }).join('');
-
-  // Row click → explorer
-  tbody.querySelectorAll('tr[data-model]').forEach(row => {
-    row.addEventListener('click', () => {
-      state.explorerModel = row.dataset.model;
-      switchTab('explorer');
-    });
-  });
-}
-
-function initLeaderboardSort() {
-  document.querySelectorAll('#lb-table thead th[data-col]').forEach(th => {
-    th.addEventListener('click', () => {
-      const col = th.dataset.col;
-      if (col === 'model' || col === 'trend') return;
-      if (state.lbSort.col === col) {
-        state.lbSort.dir = state.lbSort.dir === 'desc' ? 'asc' : 'desc';
-      } else {
-        state.lbSort.col = col;
-        state.lbSort.dir = 'desc';
-      }
-      document.querySelectorAll('#lb-table thead th').forEach(t => t.classList.remove('sorted'));
-      th.classList.add('sorted');
-      th.querySelector('.sort-arrow').textContent = state.lbSort.dir === 'desc' ? '↓' : '↑';
-      renderLbTable();
-    });
-  });
-
-  document.getElementById('lb-search').addEventListener('input', e => {
-    state.lbFilter = e.target.value;
-    renderLbTable();
-  });
-}
-
-// ─── Explorer Tab ─────────────────────────────────────────────────────────────
-function populateExplorerSelect() {
-  const sel = document.getElementById('explorer-select');
-  if (!sel) return;
-  const sorted = [...state.modelNames].sort((a,b) => (state.modelStats[b]?.score || 0) - (state.modelStats[a]?.score || 0));
-
-  // Rebuild without stacking listeners
-  const newSel = sel.cloneNode(false);
-  newSel.innerHTML = sorted.map(m =>
-    `<option value="${m}"${m === state.explorerModel ? ' selected' : ''}>${shortModel(m)} (${providerMeta(m).name})</option>`
-  ).join('');
-  sel.parentNode.replaceChild(newSel, sel);
-
-  newSel.addEventListener('change', e => {
-    state.explorerModel = e.target.value;
-    renderExplorer();
-  });
-}
-
-function renderExplorer() {
-  const model = state.explorerModel;
-  const s = state.modelStats[model];
-  const pm = providerMeta(model);
-  if (!s) return;
-
-  // Update select
-  const sel = document.getElementById('explorer-select');
-  if (sel.value !== model) sel.value = model;
-
-  // Header
-  document.getElementById('explorer-header').innerHTML = `
-    ${providerChip(model)}
-    <h2>${shortModel(model)}</h2>
-    <span style="font-size:12px;color:var(--text-dim);margin-left:auto">
-      Last seen: ${s.lastSeen ? fmtTimestamp(s.lastSeen) : '—'}
-    </span>
-  `;
-
-  // Stats
-  const uptimeColor = s.uptime >= 0.7 ? 'var(--success)' : s.uptime >= 0.4 ? 'var(--warning)' : 'var(--danger)';
-  document.getElementById('explorer-stats').innerHTML = `
-    <div class="stat-card"><div class="stat-val" style="color:${uptimeColor}">${(s.uptime*100).toFixed(1)}%</div><div class="stat-label">Uptime</div><div class="stat-sub">${s.successCount}/${s.totalRuns} runs</div></div>
-    <div class="stat-card"><div class="stat-val">${s.avgTime ? (s.avgTime/1000).toFixed(2)+'s' : '—'}</div><div class="stat-label">Avg Response</div></div>
-    <div class="stat-card"><div class="stat-val text-accent">${s.bestTime ? (s.bestTime/1000).toFixed(2)+'s' : '—'}</div><div class="stat-label">Best Response</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--blue)">${s.avgTps ? s.avgTps.toFixed(1)+' t/s' : '—'}</div><div class="stat-label">Avg Throughput</div></div>
-  `;
-
-  // Response time chart
-  const labels = state.runs.map(r => fmtTimestampShort(r.timestamp));
-  const timeData = s.responseTimes.map(v => v != null ? v / 1000 : null);
-
-  destroyChart('explorerTime');
-  state.charts.explorerTime = new Chart(document.getElementById('chart-explorer-time'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Response Time (s)',
-        data: timeData,
-        borderColor: modelColor(model),
-        backgroundColor: modelColor(model) + '14',
-        fill: true,
-        tension: 0.2,
-        spanGaps: false,
-        pointRadius: timeData.map(v => v != null ? 3 : 0),
-        pointHoverRadius: 5,
-        borderWidth: 2,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-        label: (item) => item.raw != null ? `${item.raw.toFixed(2)}s` : 'Failed'
-      }}},
-      scales: {
-        x: { display: false },
-        y: { grid: { color: '#1c1c2e' }, ticks: { callback: v => v + 's' } }
-      }
-    }
-  });
-
-  // Error donut
-  destroyChart('explorerErrors');
-  const errorCanvas = document.getElementById('chart-explorer-errors');
-  const noErrors = document.getElementById('explorer-no-errors');
-  const errorKeys = Object.keys(s.errors);
-  if (errorKeys.length === 0) {
-    errorCanvas.style.display = 'none';
-    noErrors.style.display = 'block';
-  } else {
-    errorCanvas.style.display = 'block';
-    noErrors.style.display = 'none';
-    const errorColors = ['#ef4444','#f59e0b','#a855f7','#3b82f6','#06b6d4','#64748b'];
-    state.charts.explorerErrors = new Chart(errorCanvas, {
-      type: 'doughnut',
-      data: {
-        labels: errorKeys,
-        datasets: [{
-          data: errorKeys.map(k => s.errors[k]),
-          backgroundColor: errorColors.slice(0, errorKeys.length).map(c => c + 'cc'),
-          borderColor: errorColors.slice(0, errorKeys.length),
-          borderWidth: 1,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        cutout: '65%',
-        plugins: {
-          legend: { position: 'right', labels: { boxWidth: 10, font: { size: 11 } } },
-          tooltip: CHART_DEFAULTS.tooltip,
-        }
-      }
-    });
-  }
-
-  // Heatmap — dynamic columns based on total run count, newest at top-left
-  const hm = document.getElementById('explorer-heatmap');
-  const reversed = [...s.results].reverse(); // newest first
-  const hmCols = Math.ceil(Math.sqrt(reversed.length));
-  hm.style.gridTemplateColumns = `repeat(${hmCols}, 1fr)`;
-  hm.innerHTML = reversed.map((r, i) => {
-    const runIdx = s.results.length - 1 - i;
-    if (!r) return `<div class="heatmap-cell miss" title="Run ${runIdx+1}: No data"></div>`;
-    const ts = fmtTimestamp(state.runs[runIdx]?.timestamp || '');
-    if (r.success) return `<div class="heatmap-cell pass" title="${ts}: ✓ ${(r.responseTime/1000).toFixed(2)}s"></div>`;
-    return `<div class="heatmap-cell fail" title="${ts}: ✗ ${r.error||'Error'}"></div>`;
-  }).join('');
-
-  // Run history table
-  const tbody = document.getElementById('explorer-run-table');
-  const last20 = s.results.map((r, i) => ({ r, i })).slice(-20).reverse();
-  tbody.innerHTML = last20.map(({ r, i }) => {
-    if (!r) return `<tr><td class="mono text-dim">${fmtTimestamp(state.runs[i]?.timestamp||'')}</td><td>—</td><td>—</td><td>—</td></tr>`;
-    const tps = (r.success && r.responseTime > 0) ? (r.tokensGenerated / (r.responseTime / 1000)).toFixed(1) : null;
-    return `<tr>
-      <td class="mono" style="font-size:11px">${fmtTimestamp(state.runs[i]?.timestamp||'')}</td>
-      <td><span class="status-badge ${r.success?'ok':'fail'}">${r.success?'✓ OK':'✗ Fail'}</span></td>
-      <td class="mono">${r.success ? (r.responseTime/1000).toFixed(2)+'s' : '—'}</td>
-      <td class="mono">${tps ? tps+' t/s' : '—'}</td>
-    </tr>`;
-  }).join('');
-}
-
-// ─── Timeline Tab ─────────────────────────────────────────────────────────────
-function renderTimeline() {
-  const { runs } = state;
-  const filter = state.timelineFilter;
-  const now = new Date(runs[runs.length - 1]?.timestamp || Date.now());
-
-  let filtered = [...runs].reverse(); // most recent first
-  if (filter === '24h') {
-    const cutoff = new Date(now); cutoff.setHours(cutoff.getHours() - 24);
-    filtered = filtered.filter(r => new Date(r.timestamp) >= cutoff);
-  } else if (filter === '48h') {
-    const cutoff = new Date(now); cutoff.setHours(cutoff.getHours() - 48);
-    filtered = filtered.filter(r => new Date(r.timestamp) >= cutoff);
-  } else if (filter === '7d') {
-    const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 7);
-    filtered = filtered.filter(r => new Date(r.timestamp) >= cutoff);
-  }
-
-  document.getElementById('timeline-badge').textContent = `${filtered.length} runs`;
-
-  const container = document.getElementById('run-cards');
-  container.innerHTML = filtered.map((run, idx) => {
-    const total = run.summary?.totalModels || run.models.length;
-    const succ = run.summary?.successCount ?? run.models.filter(m => m.success).length;
-    const pct = succ / total;
-    const badgeCls = pct >= 0.6 ? 'green' : pct >= 0.4 ? 'yellow' : 'red';
-    const fastest = run.summary?.fastestModel ? shortModel(run.summary.fastestModel) : '—';
-    const fastestTime = run.summary?.fastestTime ? (run.summary.fastestTime/1000).toFixed(2)+'s' : '';
-
-    return `<div class="run-card" data-run-idx="${idx}">
-      <div class="run-card-header">
-        <span class="run-card-time">${fmtTimestamp(run.timestamp)}</span>
-        <span class="run-success-badge ${badgeCls}">${succ}/${total}</span>
-        <span class="run-fastest">⚡ <span>${fastest}</span>${fastestTime ? ' · '+fastestTime : ''}</span>
-        <span class="run-expand-arrow">▼</span>
-      </div>
-      <div class="run-card-body">
-        <div class="run-prompt">Prompt: ${escHtml((run.prompt||'').slice(0,120))}${(run.prompt||'').length > 120 ? '…' : ''}</div>
-        <table class="run-detail-table">
-          <thead><tr><th>Model</th><th>Status</th><th>Response Time</th><th>Tok/s</th><th>Error</th></tr></thead>
-          <tbody>${run.models.map(m => {
-            const tps = (m.success && m.responseTime > 0) ? (m.tokensGenerated / (m.responseTime / 1000)).toFixed(1) : null;
-            const cls = m.success ? 'text-green' : 'text-red';
-            return `<tr>
-              <td>${providerChip(m.model, true)}<span style="font-size:12px">${shortModel(m.model)}</span></td>
-              <td><span class="${cls}" style="font-size:12px;font-weight:600">${m.success ? '✓' : '✗'}</span></td>
-              <td class="mono">${m.success && m.responseTime ? (m.responseTime/1000).toFixed(2)+'s' : '—'}</td>
-              <td class="mono">${tps ? tps+' t/s' : '—'}</td>
-              <td style="font-size:11px;color:var(--text-dim);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.error ? escHtml(m.error) : ''}</td>
-            </tr>`;
-          }).join('')}</tbody>
-        </table>
-      </div>
-    </div>`;
-  }).join('');
-
-  container.querySelectorAll('.run-card').forEach(card => {
-    card.querySelector('.run-card-header').addEventListener('click', () => {
-      card.classList.toggle('expanded');
-    });
-  });
-}
-
-// ─── Compare Tab ──────────────────────────────────────────────────────────────
-function populateCompareSelects() {
-  const sorted = [...state.modelNames].sort((a,b) => (state.modelStats[b]?.score || 0) - (state.modelStats[a]?.score || 0));
-  const opts = sorted.map(m => `<option value="${m}">${shortModel(m)} (${providerMeta(m).name})</option>`).join('');
-
-  const selA = document.getElementById('compare-a');
-  const selB = document.getElementById('compare-b');
-  if (!selA || !selB) return;
-
-  // Clone to avoid stacking listeners on repeated calls
-  const newA = selA.cloneNode(false);
-  const newB = selB.cloneNode(false);
-  newA.innerHTML = opts;
-  newB.innerHTML = opts;
-  selA.parentNode.replaceChild(newA, selA);
-  selB.parentNode.replaceChild(newB, selB);
-
-  const defaultA = 'qwen/qwen3-coder-480b-a35b-instruct';
-  const defaultB = 'nvidia/nemotron-3-super-120b-a12b';
-  newA.value = state.modelNames.includes(defaultA) ? defaultA : (sorted[0] || '');
-  newB.value = state.modelNames.includes(defaultB) ? defaultB : (sorted[1] || sorted[0] || '');
-
-  newA.addEventListener('change', renderCompare);
-  newB.addEventListener('change', renderCompare);
-
-  const swapBtn = document.getElementById('swap-btn');
-  if (swapBtn) {
-    const newSwap = swapBtn.cloneNode(true);
-    swapBtn.parentNode.replaceChild(newSwap, swapBtn);
-    newSwap.addEventListener('click', () => {
-      const tmp = newA.value;
-      newA.value = newB.value;
-      newB.value = tmp;
-      renderCompare();
-    });
-  }
-}
-
-function renderCompare() {
-  const modelA = document.getElementById('compare-a').value;
-  const modelB = document.getElementById('compare-b').value;
-  const sA = state.modelStats[modelA];
-  const sB = state.modelStats[modelB];
-  if (!sA || !sB) return;
-
-  // Head-to-head wins (when both succeed)
-  let winsA = 0, winsB = 0, bothSucceeded = 0;
-  state.runs.forEach((run, i) => {
-    const rA = sA.results[i];
-    const rB = sB.results[i];
-    if (rA && rA.success && rB && rB.success) {
-      bothSucceeded++;
-      if (rA.responseTime < rB.responseTime) winsA++;
-      else winsB++;
-    }
-  });
-
-  const metrics = [
-    { label: 'Uptime', a: (sA.uptime*100).toFixed(1)+'%', b: (sB.uptime*100).toFixed(1)+'%', higherBetter: true, av: sA.uptime, bv: sB.uptime },
-    { label: 'Avg Response Time', a: sA.avgTime ? (sA.avgTime/1000).toFixed(2)+'s' : '—', b: sB.avgTime ? (sB.avgTime/1000).toFixed(2)+'s' : '—', higherBetter: false, av: sA.avgTime, bv: sB.avgTime },
-    { label: 'Best Response Time', a: sA.bestTime ? (sA.bestTime/1000).toFixed(2)+'s' : '—', b: sB.bestTime ? (sB.bestTime/1000).toFixed(2)+'s' : '—', higherBetter: false, av: sA.bestTime, bv: sB.bestTime },
-    { label: 'Avg Throughput', a: sA.avgTps ? sA.avgTps.toFixed(1)+' t/s' : '—', b: sB.avgTps ? sB.avgTps.toFixed(1)+' t/s' : '—', higherBetter: true, av: sA.avgTps, bv: sB.avgTps },
-    { label: 'Total Wins', a: sA.wins, b: sB.wins, higherBetter: true, av: sA.wins, bv: sB.wins },
-    { label: 'Score', a: sA.score, b: sB.score, higherBetter: true, av: sA.score, bv: sB.score },
-    { label: 'H2H Win Rate', a: bothSucceeded ? (winsA/bothSucceeded*100).toFixed(1)+'%' : '—', b: bothSucceeded ? (winsB/bothSucceeded*100).toFixed(1)+'%' : '—', higherBetter: true, av: winsA, bv: winsB },
-  ];
-
-  const colorA = modelColor(modelA);
-  const colorB = modelColor(modelB);
-
-  document.getElementById('h2h-table').innerHTML = `
-    <thead><tr>
-      <td class="h2h-val-a" style="color:${colorA};font-size:13px;padding:10px 16px;text-align:center">${providerChip(modelA, true)} ${shortModel(modelA)}</td>
-      <td class="h2h-metric">Metric</td>
-      <td class="h2h-val-b" style="color:${colorB};font-size:13px;padding:10px 16px;text-align:center">${providerChip(modelB, true)} ${shortModel(modelB)}</td>
-    </tr></thead>
-    <tbody>${metrics.map(m => {
-      let clsA = 'h2h-val-a', clsB = 'h2h-val-b';
-      if (m.av != null && m.bv != null) {
-        const aWins = m.higherBetter ? m.av > m.bv : m.av < m.bv;
-        const bWins = m.higherBetter ? m.bv > m.av : m.bv < m.av;
-        if (aWins) clsA += ' winner';
-        if (bWins) clsB += ' winner';
-      }
-      return `<tr class="h2h-row">
-        <td class="${clsA}" style="padding:10px 16px">${m.a}</td>
-        <td class="h2h-metric" style="padding:10px 16px">${m.label}</td>
-        <td class="${clsB}" style="padding:10px 16px">${m.b}</td>
-      </tr>`;
-    }).join('')}</tbody>
-  `;
-
-  // Overlay chart
-  const labels = state.runs.map(r => fmtTimestampShort(r.timestamp));
-  destroyChart('compareTime');
-  state.charts.compareTime = new Chart(document.getElementById('chart-compare-time'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: shortModel(modelA),
-          data: sA.responseTimes.map(v => v != null ? v/1000 : null),
-          borderColor: colorA,
-          backgroundColor: colorA + '14',
-          fill: false,
-          tension: 0.2,
-          spanGaps: false,
-          pointRadius: 2,
-          pointHoverRadius: 5,
-          borderWidth: 2,
-        },
-        {
-          label: shortModel(modelB),
-          data: sB.responseTimes.map(v => v != null ? v/1000 : null),
-          borderColor: colorB,
-          backgroundColor: colorB + '14',
-          fill: false,
-          tension: 0.2,
-          spanGaps: false,
-          pointRadius: 2,
-          pointHoverRadius: 5,
-          borderWidth: 2,
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { boxWidth: 12, font: { size: 11 } } },
-        tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-          label: (item) => item.raw != null ? `${item.dataset.label}: ${item.raw.toFixed(2)}s` : `${item.dataset.label}: Failed`
-        }}
-      },
-      scales: {
-        x: { display: false },
-        y: { grid: { color: '#1c1c2e' }, ticks: { callback: v => v + 's' } }
-      }
-    }
-  });
-
-  // Win timeline
-  const winData = state.runs.map((run, i) => {
-    const rA = sA.results[i], rB = sB.results[i];
-    if (!rA?.success && !rB?.success) return null;
-    if (rA?.success && !rB?.success) return 1;
-    if (!rA?.success && rB?.success) return -1;
-    return rA.responseTime < rB.responseTime ? 1 : -1;
-  });
-
-  destroyChart('compareWins');
-  state.charts.compareWins = new Chart(document.getElementById('chart-compare-wins'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Winner per run',
-        data: winData,
-        backgroundColor: winData.map(v => v == null ? '#1c1c2e' : v > 0 ? colorA + 'cc' : colorB + 'cc'),
-        borderColor: winData.map(v => v == null ? '#1c1c2e' : v > 0 ? colorA : colorB),
-        borderWidth: 1,
-        borderRadius: 2,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-          label: (item) => {
-            if (item.raw == null) return 'Both failed';
-            return item.raw > 0 ? `${shortModel(modelA)} won` : `${shortModel(modelB)} won`;
-          }
-        }}
-      },
-      scales: {
-        x: { display: false },
-        y: { display: false, min: -1.5, max: 1.5 }
-      }
-    }
-  });
-}
-
-// ─── Tab Navigation ───────────────────────────────────────────────────────────
-function switchTab(tabName) {
-  state.currentTab = tabName;
-  document.querySelectorAll('section[data-tab]').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.querySelector(`section[data-tab="${tabName}"]`)?.classList.add('active');
-  document.querySelector(`.nav-tab[data-goto="${tabName}"]`)?.classList.add('active');
-
-  if (tabName === 'overview') renderOverview();
-  if (tabName === 'leaderboard') renderLeaderboard();
-  if (tabName === 'explorer') renderExplorer();
-  if (tabName === 'timeline') renderTimeline();
-  if (tabName === 'compare') renderCompare();
-}
-
-// ─── Initialization ───────────────────────────────────────────────────────────
-async function init() {
-  try {
-    const SQL = await initSqlJs({
-      locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
-    });
-
-    const res = await fetch('history.db');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const buf = await res.arrayBuffer();
-    state.db = new SQL.Database(new Uint8Array(buf));
-
-    const data = loadFromDb(state.db);
-
-    const processed = processData(data);
-    state.runs = processed.runs;
-    state.modelNames = processed.modelNames;
-    state.modelStats = processed.modelStats;
-
-    // Nav status
-    document.getElementById('nav-status').textContent =
-      `${state.runs.length} runs · ${state.modelNames.length} models`;
-
-    // Populate selects
-    populateExplorerSelect();
-    populateCompareSelects();
-
-    // Init leaderboard sort
-    initLeaderboardSort();
-
-    // Timeline filters
-    document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        state.timelineFilter = btn.dataset.filter;
-        renderTimeline();
-      });
-    });
-
-    // Nav tabs
-    document.querySelectorAll('.nav-tab[data-goto]').forEach(btn => {
-      btn.addEventListener('click', () => switchTab(btn.dataset.goto));
-    });
-
-    // Initial render
-    renderOverview();
-
-    // Show app
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').classList.add('visible');
-
-  } catch (err) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').classList.add('visible');
-    document.getElementById('error-state').style.display = 'flex';
-    document.getElementById('error-msg').textContent = `Error: ${err.message}. Make sure history.db exists and you're serving via HTTP.`;
-    console.error('Failed to load data:', err);
-  }
-}
-
-init();
-</script>
+<script src="js/helpers.js"></script>
+<script src="js/data.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/tabs.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
