@@ -4,12 +4,12 @@
   "score": 72,
   "intelligence": 14.9,
   "uptime": 90.8,
-  "avg_response_time_ms": 4887.32874617737,
+  "avg_response_time_ms": 4889.090214067278,
   "best_response_time_ms": 432,
-  "avg_throughput_tps": 165.2,
+  "avg_throughput_tps": 165.1,
   "total_runs": 720,
   "success_count": 654,
-  "wins": 374,
-  "last_seen": "2026-07-06T20:00:07Z",
-  "generated_at": "2026-07-06T20:10:44Z"
+  "wins": 373,
+  "last_seen": "2026-07-06T21:00:07Z",
+  "generated_at": "2026-07-06T21:07:05Z"
 }
