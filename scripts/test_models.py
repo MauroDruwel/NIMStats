@@ -72,22 +72,6 @@ def failure_result(model: str, error: str) -> dict[str, Any]:
     }
 
 
-def normalize_content(value: Any) -> str:
-    if isinstance(value, str):
-        return value
-    if isinstance(value, list):
-        parts: list[str] = []
-        for item in value:
-            if isinstance(item, str):
-                parts.append(item)
-            elif isinstance(item, dict):
-                text = item.get("text")
-                if isinstance(text, str):
-                    parts.append(text)
-        return "".join(parts)
-    return ""
-
-
 def to_int(value: Any) -> int:
     try:
         return int(value)
@@ -102,7 +86,7 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
         "temperature": 0.7,
         "top_p": 0.9,
         "max_tokens": 500,
-        "stream": False,
+        "stream": True,
     }
     body = json.dumps(payload).encode("utf-8")
 
@@ -117,71 +101,88 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
     )
 
     started = time.perf_counter()
-    raw_body = ""
     status_code = 0
+    error_body = ""
 
     try:
         with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             status_code = response.status
-            raw_body = response.read().decode("utf-8", errors="replace")
+
+            content_parts: list[str] = []
+            time_to_first_token_ms: int | None = None
+            completion_tokens = 0
+            total_tokens = 0
+
+            for raw_line in response:
+                line = raw_line.decode("utf-8", errors="replace").strip()
+                if not line or not line.startswith("data: "):
+                    continue
+                data_str = line[len("data: "):]
+                if data_str == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(data_str)
+                except json.JSONDecodeError:
+                    continue
+
+                # Extract content from delta
+                choices = chunk.get("choices")
+                if isinstance(choices, list) and choices:
+                    delta = choices[0].get("delta") or {}
+                    text = delta.get("content") or ""
+                    if text:
+                        if time_to_first_token_ms is None:
+                            time_to_first_token_ms = int((time.perf_counter() - started) * 1000)
+                        content_parts.append(text)
+
+                usage = chunk.get("usage") if isinstance(chunk.get("usage"), dict) else {}
+                completion_tokens = to_int(usage.get("completion_tokens"))
+                total_tokens = to_int(usage.get("total_tokens"))
+
+            response_time = int((time.perf_counter() - started) * 1000)
+            content = "".join(content_parts)
+
     except urllib.error.HTTPError as exc:
         status_code = getattr(exc, "code", 0) or 0
-        raw_body = exc.read().decode("utf-8", errors="replace")
+        error_body = exc.read().decode("utf-8", errors="replace")
+        response_time = int((time.perf_counter() - started) * 1000)
+        content = ""
+        time_to_first_token_ms = None
     except TimeoutError:
         return failure_result(model, f"Request timed out after {REQUEST_TIMEOUT_SECONDS}s")
     except Exception as exc:
         return failure_result(model, f"Request failed: {exc}")
 
-    response_time = int((time.perf_counter() - started) * 1000)
-
-    if not raw_body.strip():
-        return failure_result(model, "Empty response from API")
-
-    try:
-        data = json.loads(raw_body)
-    except json.JSONDecodeError as exc:
-        return {
-            "model": model,
-            "success": False,
-            "error": f"Invalid JSON response: {exc.msg} at line {exc.lineno} column {exc.colno}",
-            "responseTime": response_time,
-            "tokensGenerated": None,
-            "totalTokens": None,
-            "response": raw_body,
-        }
-
-    error_obj = data.get("error")
-    error_message = ""
-    if isinstance(error_obj, dict):
-        error_message = str(error_obj.get("message") or "").strip()
-    elif isinstance(error_obj, str):
-        error_message = error_obj.strip()
-
     if status_code >= 400:
-        if not error_message:
-            error_message = f"HTTP {status_code} returned by API"
+        error_message = f"HTTP {status_code}"
+        # Try SSE-formatted error body first (streaming providers)
+        for line in error_body.splitlines():
+            if line.strip().startswith("data: ") and line.strip()[6:] != "[DONE]":
+                try:
+                    err_chunk = json.loads(line.strip()[6:])
+                    err_obj = err_chunk.get("error")
+                    if isinstance(err_obj, dict):
+                        error_message = f"HTTP {status_code}: {err_obj.get('message', '')}"
+                    elif isinstance(err_obj, str):
+                        error_message = f"HTTP {status_code}: {err_obj}"
+                except json.JSONDecodeError:
+                    pass
+                break
         else:
-            error_message = f"HTTP {status_code}: {error_message}"
+            # Fallback: plain JSON error body (non-streaming error responses)
+            try:
+                err_data = json.loads(error_body)
+                err_obj = err_data.get("error")
+                if isinstance(err_obj, dict):
+                    error_message = f"HTTP {status_code}: {err_obj.get('message', '')}"
+                elif isinstance(err_obj, str):
+                    error_message = f"HTTP {status_code}: {err_obj}"
+            except (json.JSONDecodeError, AttributeError):
+                pass
         return failure_result(model, error_message)
-
-    if error_message:
-        return failure_result(model, error_message)
-
-    choices = data.get("choices")
-    content = ""
-    if isinstance(choices, list) and choices:
-        first_choice = choices[0]
-        if isinstance(first_choice, dict):
-            message = first_choice.get("message")
-            if isinstance(message, dict):
-                content = normalize_content(message.get("content"))
 
     if not content.strip():
         return failure_result(model, "No content in response")
-
-    usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
-    completion_tokens = to_int(usage.get("completion_tokens"))
-    total_tokens = to_int(usage.get("total_tokens"))
 
     return {
         "model": model,
