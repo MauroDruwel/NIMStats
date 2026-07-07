@@ -1,1 +1,1 @@
-moonshotai/kimi-k2.6
+minimaxai/minimax-m3

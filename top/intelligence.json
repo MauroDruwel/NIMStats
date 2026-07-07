@@ -1,15 +1,15 @@
 {
-  "best_model": "moonshotai/kimi-k2.6",
-  "provider": "moonshotai",
-  "score": 61,
-  "intelligence": 44.2,
-  "uptime": 99.4,
-  "avg_response_time_ms": 12640.518156424581,
-  "best_response_time_ms": 687,
-  "avg_throughput_tps": 41.5,
-  "total_runs": 720,
-  "success_count": 716,
-  "wins": 45,
-  "last_seen": "2026-07-07T21:00:08Z",
-  "generated_at": "2026-07-07T21:09:18Z"
+  "best_model": "minimaxai/minimax-m3",
+  "provider": "minimaxai",
+  "score": 60,
+  "intelligence": 44.4,
+  "uptime": 97.6,
+  "avg_response_time_ms": 95326.5875,
+  "best_response_time_ms": 6146,
+  "avg_throughput_tps": 7.6,
+  "total_runs": 82,
+  "success_count": 80,
+  "wins": 0,
+  "last_seen": "2026-07-07T22:00:08Z",
+  "generated_at": "2026-07-07T22:09:20Z"
 }
