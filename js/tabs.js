@@ -443,20 +443,20 @@ function renderExplorer() {
     if (compCanvas) compCanvas.style.display = 'block';
 
     // 1. Radar Chart: Model Capability Breakdown
-    const radarLabels = ['Reliability', 'Intelligence', 'Speed', 'Throughput', 'Reasoning', 'Coding'];
+    const radarLabels = ['Reliability (%)', 'Intelligence Index', 'Avg Response (s)', 'Avg Throughput (t/s)', 'Reasoning Index', 'Coding Index'];
     const modelRadarData = [
       s.uptime * 100,
       s.intelligence,
-      s.speedScore,
-      s.tpsScore,
+      s.avgTime ? s.avgTime / 1000 : 0,
+      s.avgTps || 0,
       Math.min(100, s.intelligence * 1.05),
       s.intelligence * 0.95
     ];
     const avgRadarData = [
       avgUptime,
       avgIntel,
-      avgSpeedScore,
-      avgTpsScore,
+      avgTimeGlobal,
+      avgTpsGlobal,
       Math.min(100, avgIntel * 1.05),
       avgIntel * 0.95
     ];
@@ -490,12 +490,20 @@ function renderExplorer() {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { display: true, labels: { boxWidth: 12, font: { size: 10 } } },
-          tooltip: { ...CHART_DEFAULTS.tooltip }
+          tooltip: {
+            ...CHART_DEFAULTS.tooltip,
+            callbacks: {
+              label: (item) => {
+                const label = item.chart.data.labels[item.dataIndex];
+                const val = item.raw;
+                return `${item.dataset.label} ${label}: ${val.toFixed(1)}`;
+              }
+            }
+          }
         },
         scales: {
           r: {
             min: 0,
-            max: 100,
             ticks: { display: false },
             angleLines: { color: '#282a31' },
             grid: { color: '#282a31' },
