@@ -164,20 +164,20 @@ NIMStats exposes lightweight, static API endpoints for querying the #1 model in 
 ## 🏗️ How It Works
 
 ````
-┌──────────────────── GitHub Actions (every hour) ────────────────────┐
+┌──────────────────── GitHub Actions (every hour) ──────────────────────┐
 │                                                                       │
 │   ┌─────────────────────┐        ┌─────────────────────┐              │
-│   │  Job 1 — Group A    │        │  Job 2 — Group B    │ (parallel)  │
+│   │  Job 1 — Group A    │        │  Job 2 — Group B    │ (parallel)   │
 │   │  N/2 NIM models     │        │  N/2 NIM models     │              │
 │   └──────────┬──────────┘        └──────────┬──────────┘              │
 │              └──────────────┬───────────────┘                         │
-│                    ┌────────▼────────┐                                 │
+│                    ┌────────▼────────┐                                │
 │                    │  Merge + commit │ → history.db committed to repo │
-│                    └─────────────────┘                                 │
+│                    └─────────────────┘                                │
 └───────────────────────────────────────────────────────────────────────┘
                               │
-                   ┌──────────▼──────────┐
-                   │  Cloudflare Pages     │ → auto-deploys on push
+                   ┌──────────▼───────────┐
+                   │  Cloudflare Pages    │ → auto-deploys on push
                    │  (static dashboard)  │   index.html + history.db
                    └──────────────────────┘
 ````
