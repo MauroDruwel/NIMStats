@@ -68,6 +68,7 @@ def failure_result(model: str, error: str) -> dict[str, Any]:
         "responseTime": None,
         "tokensGenerated": None,
         "totalTokens": None,
+        "timeToFirstToken": None,
         "response": None,
     }
 
@@ -190,6 +191,7 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
         "responseTime": response_time,
         "tokensGenerated": completion_tokens,
         "totalTokens": total_tokens,
+        "timeToFirstToken": time_to_first_token_ms,
         "response": content,
         "error": None,
     }
@@ -250,9 +252,8 @@ def main() -> int:
         print(f"Testing: {model}")
         result = call_model(model, PROMPT)
         if result.get("success"):
-            print(
-                f"  ✓ Success ({result['responseTime']}ms, {result.get('tokensGenerated', 0)} tokens)"
-            )
+            ttft_str = f", TTFT {result['timeToFirstToken']}ms" if result.get("timeToFirstToken") is not None else ""
+            print(f"  ✓ Success ({result['responseTime']}ms{ttft_str}, {result.get('tokensGenerated', 0)} tokens)")
         else:
             print(f"  ✗ Failed: {result.get('error') or 'Unknown error'}")
         results.append(result)
