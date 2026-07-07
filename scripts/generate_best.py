@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
-"""Generate best/index.json from history.db — the current #1 model by composite score.
+"""Generate specialized top model endpoints from history.db.
 
-Scoring mirrors the dashboard:
-reliability (30%) + intelligence (30%) + speed (20%) + throughput (20%)
+Outputs:
+- Balanced (top/index.json, top/model.txt): reliability (30%) + intelligence (30%) + speed (20%) + throughput (20%)
+- Speed (top/speed.json, top/speed.txt): speed (50%) + throughput (50%)
+- Intelligence (top/intelligence.json, top/intelligence.txt): intelligence (70%) + reliability (30%)
 """
 
 import json
 import sqlite3
 import sys
-from datetime import datetime, timezone
+from datetime import timezone, datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HISTORY_DB = REPO_ROOT / "history.db"
-OUTPUT_JSON = REPO_ROOT / "top" / "index.json"
-OUTPUT_TXT = REPO_ROOT / "top" / "model.txt"
+TOP_DIR = REPO_ROOT / "top"
 
 
 def load_data(conn):
@@ -28,7 +29,7 @@ def load_data(conn):
     # Load model intelligence scores
     models_intel = {}
     for m_name, intel in conn.execute("SELECT name, intelligence_score FROM models").fetchall():
-        models_intel[m_name] = intel or 50.0
+        models_intel[m_name] = intel
 
     if not runs_q:
         return [], models_intel
@@ -78,7 +79,7 @@ def compute_stats(runs, models_intel):
             "avgTps": sum(tps_arr) / len(tps_arr) if tps_arr else None,
             "wins": 0,
             "lastSeen": None,
-            "intelligence": models_intel.get(model, 50.0)
+            "intelligence": models_intel.get(model)
         }
 
         for i in range(len(results) - 1, -1, -1):
@@ -109,10 +110,41 @@ def compute_stats(runs, models_intel):
             if s["avgTps"] is not None
             else 0
         )
-        # Revised 4-factor scoring: reliability (30%) + intelligence (30%) + speed (20%) + throughput (20%)
-        s["score"] = round(s["uptime"] * 30 + speed_score * 0.2 + tps_score * 0.2 + (s["intelligence"] / 100) * 30)
+        
+        intel_val = s["intelligence"] if s["intelligence"] is not None else 50.0
+
+        # Compute specialized scores
+        s["score_balanced"] = round(s["uptime"] * 30 + speed_score * 0.2 + tps_score * 0.2 + (intel_val / 100) * 30)
+        s["score_speed"] = round(speed_score * 0.5 + tps_score * 0.5)
+        s["score_intel"] = round((intel_val / 100) * 70 + s["uptime"] * 30)
 
     return stats
+
+
+def write_endpoint(slug: str, best_model: str, stats_record: dict, key_name: str) -> None:
+    """Helper to write the JSON and raw text files for a specific category."""
+    output_json = TOP_DIR / f"{slug}.json" if slug != "index" else TOP_DIR / "index.json"
+    output_txt = TOP_DIR / f"{slug}.txt" if slug != "index" else TOP_DIR / "model.txt"
+
+    output = {
+        "best_model": best_model,
+        "provider": best_model.split("/")[0] if "/" in best_model else best_model,
+        "score": stats_record[key_name],
+        "intelligence": stats_record["intelligence"],
+        "uptime": round(stats_record["uptime"] * 100, 1),
+        "avg_response_time_ms": stats_record["avgTime"],
+        "best_response_time_ms": stats_record["bestTime"],
+        "avg_throughput_tps": round(stats_record["avgTps"], 1) if stats_record["avgTps"] else None,
+        "total_runs": stats_record["totalRuns"],
+        "success_count": stats_record["successCount"],
+        "wins": stats_record["wins"],
+        "last_seen": stats_record["lastSeen"],
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    
+    output_json.write_text(json.dumps(output, indent=2), encoding="utf-8")
+    output_txt.write_text(best_model, encoding="utf-8")
+    print(f"OK Generated top/{slug} -- best model: {best_model} (score: {stats_record[key_name]})")
 
 
 def main():
@@ -123,36 +155,29 @@ def main():
     conn = sqlite3.connect(str(HISTORY_DB))
     try:
         runs, models_intel = load_data(conn)
+        TOP_DIR.mkdir(parents=True, exist_ok=True)
+        
         if not runs:
             print("No runs in history.db")
-            OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
             empty = {"error": "No benchmark data available", "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
-            OUTPUT_JSON.write_text(json.dumps(empty, indent=2), encoding="utf-8")
-            OUTPUT_TXT.write_text("", encoding="utf-8")
+            (TOP_DIR / "index.json").write_text(json.dumps(empty, indent=2), encoding="utf-8")
+            (TOP_DIR / "model.txt").write_text("", encoding="utf-8")
             return 0
+            
         stats = compute_stats(runs, models_intel)
-        best_model = max(stats, key=lambda m: stats[m]["score"])
-        s = stats[best_model]
-        provider = best_model.split("/")[0]
-        output = {
-            "best_model": best_model,
-            "provider": provider,
-            "score": s["score"],
-            "intelligence": s["intelligence"],
-            "uptime": round(s["uptime"] * 100, 1),
-            "avg_response_time_ms": s["avgTime"],
-            "best_response_time_ms": s["bestTime"],
-            "avg_throughput_tps": round(s["avgTps"], 1) if s["avgTps"] else None,
-            "total_runs": s["totalRuns"],
-            "success_count": s["successCount"],
-            "wins": s["wins"],
-            "last_seen": s["lastSeen"],
-            "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        }
-        OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
-        OUTPUT_JSON.write_text(json.dumps(output, indent=2), encoding="utf-8")
-        OUTPUT_TXT.write_text(best_model, encoding="utf-8")
-        print(f"OK Generated top/ -- best model: {best_model} (score: {s['score']})")
+        
+        # 1. Balanced
+        best_balanced = max(stats, key=lambda m: stats[m]["score_balanced"])
+        write_endpoint("index", best_balanced, stats[best_balanced], "score_balanced")
+        
+        # 2. Speed
+        best_speed = max(stats, key=lambda m: stats[m]["score_speed"])
+        write_endpoint("speed", best_speed, stats[best_speed], "score_speed")
+        
+        # 3. Intelligence
+        best_intel = max(stats, key=lambda m: stats[m]["score_intel"])
+        write_endpoint("intelligence", best_intel, stats[best_intel], "score_intel")
+        
     finally:
         conn.close()
     return 0

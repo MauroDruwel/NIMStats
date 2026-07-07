@@ -1,7 +1,7 @@
 {
   "best_model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
   "provider": "nvidia",
-  "score": 71,
+  "score": 100,
   "intelligence": 14.9,
   "uptime": 90.6,
   "avg_response_time_ms": 4736.679447852761,

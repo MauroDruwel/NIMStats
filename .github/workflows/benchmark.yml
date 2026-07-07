@@ -81,7 +81,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add history.db top/index.json top/model.txt
+          git add history.db top/
           if ! git diff --cached --quiet; then
             git commit -m "Update benchmark results"
             git push

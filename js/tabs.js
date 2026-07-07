@@ -532,11 +532,36 @@ function renderExplorer() {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { display: true, labels: { boxWidth: 12, font: { size: 10 } } },
-          tooltip: { ...CHART_DEFAULTS.tooltip }
+          tooltip: {
+            ...CHART_DEFAULTS.tooltip,
+            callbacks: {
+              label: (item) => {
+                const dataset = item.dataset;
+                const isModel = item.datasetIndex === 0;
+                const val = item.raw;
+                
+                if (item.dataIndex === 0) {
+                  return `${dataset.label}: ${val.toFixed(1)}% Uptime`;
+                } else if (item.dataIndex === 1) {
+                  return `${dataset.label}: ${val ? val.toFixed(0) : '—'} Intelligence Index`;
+                } else if (item.dataIndex === 2) {
+                  const rawTime = isModel ? (s.avgTime ? (s.avgTime/1000).toFixed(2)+'s' : '—') : (avg(allModels.map(m => state.modelStats[m]?.avgTime).filter(t => t != null)) / 1000).toFixed(2)+'s';
+                  return `${dataset.label} Speed Score: ${val.toFixed(1)} (Avg: ${rawTime})`;
+                } else if (item.dataIndex === 3) {
+                  const rawTps = isModel ? (s.avgTps ? s.avgTps.toFixed(1)+' t/s' : '—') : (avg(allModels.map(m => state.modelStats[m]?.avgTps).filter(t => t != null))).toFixed(1)+' t/s';
+                  return `${dataset.label} Throughput Score: ${val.toFixed(1)} (Avg: ${rawTps})`;
+                }
+                return `${dataset.label}: ${val}`;
+              }
+            }
+          }
         },
         scales: {
           x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-          y: { grid: {} }
+          y: { 
+            title: { display: true, text: 'Index Score (higher is better)', color: '#9aa0a6', font: { size: 10 } },
+            grid: {} 
+          }
         }
       }
     });
