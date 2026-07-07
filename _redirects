@@ -1,2 +1,6 @@
 /top /top/index.json 200
 /top/model /top/model.txt 200
+/top/speed /top/speed.json 200
+/top/speed/model /top/speed.txt 200
+/top/intelligence /top/intelligence.json 200
+/top/intelligence/model /top/intelligence.txt 200

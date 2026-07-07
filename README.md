@@ -85,9 +85,43 @@ That's it — your dashboard auto-refreshes every hour. ✨
 | **🔬 Explorer** | Per-model deep dive · response time history chart · error breakdown donut · availability heatmap |
 | **⏱ Timeline** | Filterable run history (All / 24h / 48h / 7d) · expandable run cards with full per-model detail |
 | **⚔️ Compare** | Head-to-head overlay chart · win-rate stats · side-by-side metric comparison |
-| **🔗 `/top` API** | Static endpoints — `GET /top` returns JSON with the current #1 model (score, uptime, speed, throughput); `GET /top/model` returns just the plain-text model name. Poll from Postman, scripts, or apps |
+| **🔗 Public APIs** | Multiple category endpoints: `/top` (balanced), `/top/speed` (speed & tps), and `/top/intelligence` (capabilities) in both JSON and raw `.txt` formats. Perfect for integration with local scripts, scripts, or apps |
 
 </div>
+
+---
+
+## 🔌 Developer APIs
+
+NIMStats exposes lightweight, static API endpoints for querying the #1 model in different performance categories. Every time the hourly benchmark completes, these endpoints are updated.
+
+### Available Endpoints
+
+| Category | Endpoint (JSON) | Endpoint (Plain Text) | Scoring Balance |
+| :--- | :--- | :--- | :--- |
+| **⚖️ Balanced (Overall)** | [`/top`](https://nimstats.maurodruwel.be/top) | [`/top/model`](https://nimstats.maurodruwel.be/top/model) | **30%** Uptime + **30%** Intelligence + **20%** Avg Time + **20%** Throughput |
+| **🏎️ Speed & Throughput** | [`/top/speed`](https://nimstats.maurodruwel.be/top/speed) | [`/top/speed/model`](https://nimstats.maurodruwel.be/top/speed/model) | **50%** Avg Response Time + **50%** Throughput (TPS) |
+| **🧠 Model Intelligence** | [`/top/intelligence`](https://nimstats.maurodruwel.be/top/intelligence) | [`/top/intelligence/model`](https://nimstats.maurodruwel.be/top/intelligence/model) | **70%** Artificial Analysis Score + **30%** Uptime |
+
+### JSON Response Schema
+
+```json
+{
+  "best_model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+  "provider": "nvidia",
+  "score": 71,
+  "intelligence": 14.9,
+  "uptime": 90.6,
+  "avg_response_time_ms": 4736.7,
+  "best_response_time_ms": 432.0,
+  "avg_throughput_tps": 163.3,
+  "total_runs": 720,
+  "success_count": 652,
+  "wins": 364,
+  "last_seen": "2026-07-07T10:00:08Z",
+  "generated_at": "2026-07-07T10:08:49Z"
+}
+```
 
 ---
 
@@ -219,14 +253,43 @@ python3 scripts/test_models.py
 
 `history.db` is a SQLite database persisted in the repo — the single source of truth. The browser loads it via [sql.js](https://sql.js.org/) (WebAssembly) and queries it entirely client-side. `scripts/results.json` is a temporary per-job artifact that is never committed.
 
-**Schema:**
+**Schema Architecture:**
 
 ```sql
-prompts       (id, text)
-models        (id, name)
-errors        (id, text)
-runs          (id, timestamp, prompt_id, fastest_model_id, fastest_time)
-model_results (run_id, model_id, success, error_id, response_time, tokens_generated, total_tokens)
+CREATE TABLE prompts (
+  id INTEGER PRIMARY KEY,
+  text TEXT UNIQUE
+);
+
+CREATE TABLE models (
+  id INTEGER PRIMARY KEY,
+  name TEXT UNIQUE,
+  intelligence_score REAL DEFAULT NULL
+);
+
+CREATE TABLE errors (
+  id INTEGER PRIMARY KEY,
+  text TEXT UNIQUE
+);
+
+CREATE TABLE runs (
+  id INTEGER PRIMARY KEY,
+  timestamp TEXT NOT NULL,
+  prompt_id INTEGER REFERENCES prompts(id),
+  fastest_model_id INTEGER REFERENCES models(id),
+  fastest_time INTEGER
+);
+
+CREATE TABLE model_results (
+  run_id INTEGER REFERENCES runs(id),
+  model_id INTEGER REFERENCES models(id),
+  success INTEGER NOT NULL,
+  error_id INTEGER REFERENCES errors(id),
+  response_time INTEGER,
+  tokens_generated INTEGER,
+  total_tokens INTEGER,
+  PRIMARY KEY (run_id, model_id)
+);
 ```
 
 **Benchmark parameters:** `temperature: 0.7` · `top_p: 0.9` · `max_tokens: 500` · OpenAI-compatible API
