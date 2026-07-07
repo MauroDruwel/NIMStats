@@ -421,6 +421,8 @@ function renderExplorer() {
   const avgIntel = avg(allModels.map(m => state.modelStats[m]?.intelligence || 50));
   const avgSpeedScore = avg(allModels.map(m => state.modelStats[m]?.speedScore || 0));
   const avgTpsScore = avg(allModels.map(m => state.modelStats[m]?.tpsScore || 0));
+  const avgTimeGlobal = avg(allModels.map(m => state.modelStats[m]?.avgTime).filter(t => t != null)) / 1000;
+  const avgTpsGlobal = avg(allModels.map(m => state.modelStats[m]?.avgTps).filter(t => t != null));
 
   const noRadarEl = document.getElementById('explorer-no-radar');
   const radarCanvas = document.getElementById('chart-explorer-radar');
@@ -508,11 +510,16 @@ function renderExplorer() {
     state.charts.explorerComparison = new Chart(compCanvas, {
       type: 'bar',
       data: {
-        labels: ['Reliability (%)', 'Intelligence Index', 'Speed Score', 'Throughput Score'],
+        labels: ['Reliability (%)', 'Intelligence Index', 'Avg Response (s)', 'Avg Throughput (t/s)'],
         datasets: [
           {
             label: shortModel(model),
-            data: [s.uptime * 100, s.intelligence, s.speedScore, s.tpsScore],
+            data: [
+              s.uptime * 100,
+              s.intelligence,
+              s.avgTime ? s.avgTime / 1000 : 0,
+              s.avgTps || 0
+            ],
             backgroundColor: modelColor(model) + 'cc',
             borderColor: modelColor(model),
             borderWidth: 1,
@@ -520,7 +527,12 @@ function renderExplorer() {
           },
           {
             label: 'Global Average',
-            data: [avgUptime, avgIntel, avgSpeedScore, avgTpsScore],
+            data: [
+              avgUptime,
+              avgIntel,
+              avgTimeGlobal,
+              avgTpsGlobal
+            ],
             backgroundColor: 'rgba(154, 160, 166, 0.25)',
             borderColor: '#9aa0a6',
             borderWidth: 1,
@@ -537,19 +549,16 @@ function renderExplorer() {
             callbacks: {
               label: (item) => {
                 const dataset = item.dataset;
-                const isModel = item.datasetIndex === 0;
                 const val = item.raw;
                 
                 if (item.dataIndex === 0) {
-                  return `${dataset.label}: ${val.toFixed(1)}% Uptime`;
+                  return `${dataset.label} Reliability: ${val.toFixed(1)}% Uptime`;
                 } else if (item.dataIndex === 1) {
-                  return `${dataset.label}: ${val ? val.toFixed(0) : '—'} Intelligence Index`;
+                  return `${dataset.label} Intelligence: ${val ? val.toFixed(0) : '—'} Index`;
                 } else if (item.dataIndex === 2) {
-                  const rawTime = isModel ? (s.avgTime ? (s.avgTime/1000).toFixed(2)+'s' : '—') : (avg(allModels.map(m => state.modelStats[m]?.avgTime).filter(t => t != null)) / 1000).toFixed(2)+'s';
-                  return `${dataset.label} Speed Score: ${val.toFixed(1)} (Avg: ${rawTime})`;
+                  return `${dataset.label} Avg Response: ${val.toFixed(2)}s`;
                 } else if (item.dataIndex === 3) {
-                  const rawTps = isModel ? (s.avgTps ? s.avgTps.toFixed(1)+' t/s' : '—') : (avg(allModels.map(m => state.modelStats[m]?.avgTps).filter(t => t != null))).toFixed(1)+' t/s';
-                  return `${dataset.label} Throughput Score: ${val.toFixed(1)} (Avg: ${rawTps})`;
+                  return `${dataset.label} Avg Throughput: ${val.toFixed(1)} t/s`;
                 }
                 return `${dataset.label}: ${val}`;
               }
@@ -558,10 +567,7 @@ function renderExplorer() {
         },
         scales: {
           x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-          y: { 
-            title: { display: true, text: 'Index Score (higher is better)', color: '#9aa0a6', font: { size: 10 } },
-            grid: {} 
-          }
+          y: { grid: {} }
         }
       }
     });
