@@ -1,15 +1,15 @@
 {
-  "best_model": "z-ai/glm-5.2",
-  "provider": "z-ai",
-  "score": 62,
-  "intelligence": 51.1,
-  "uptime": 86.8,
-  "avg_response_time_ms": 21362.333333333332,
-  "best_response_time_ms": 4360,
-  "avg_throughput_tps": 32.6,
-  "total_runs": 76,
-  "success_count": 66,
-  "wins": 0,
-  "last_seen": "2026-07-07T06:00:07Z",
-  "generated_at": "2026-07-07T16:13:53Z"
+  "best_model": "moonshotai/kimi-k2.6",
+  "provider": "moonshotai",
+  "score": 61,
+  "intelligence": 44.2,
+  "uptime": 99.4,
+  "avg_response_time_ms": 12585.018156424581,
+  "best_response_time_ms": 687,
+  "avg_throughput_tps": 41.5,
+  "total_runs": 720,
+  "success_count": 716,
+  "wins": 46,
+  "last_seen": "2026-07-07T17:00:08Z",
+  "generated_at": "2026-07-07T17:14:36Z"
 }
