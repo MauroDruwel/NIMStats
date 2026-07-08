@@ -1,1 +1,1 @@
-z-ai/glm-5.2
+moonshotai/kimi-k2.6
