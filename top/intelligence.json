@@ -3,13 +3,13 @@
   "provider": "moonshotai",
   "score": 61,
   "intelligence": 44.2,
-  "uptime": 98.9,
-  "avg_response_time_ms": 12733.143258426966,
+  "uptime": 98.8,
+  "avg_response_time_ms": 12736.942334739802,
   "best_response_time_ms": 687,
   "avg_throughput_tps": 41.3,
   "total_runs": 720,
-  "success_count": 712,
+  "success_count": 711,
   "wins": 45,
   "last_seen": "2026-07-08T08:00:08Z",
-  "generated_at": "2026-07-08T12:15:03Z"
+  "generated_at": "2026-07-08T13:12:56Z"
 }
