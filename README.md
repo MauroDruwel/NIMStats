@@ -114,6 +114,7 @@ NIMStats exposes lightweight, static API endpoints for querying the #1 model in 
   "uptime": 90.6,
   "avg_response_time_ms": 4736.7,
   "best_response_time_ms": 432.0,
+  "avg_time_to_first_token_ms": 312.5,
   "avg_throughput_tps": 163.3,
   "total_runs": 720,
   "success_count": 652,
@@ -288,6 +289,7 @@ CREATE TABLE model_results (
   response_time INTEGER,
   tokens_generated INTEGER,
   total_tokens INTEGER,
+  time_to_first_token INTEGER,
   PRIMARY KEY (run_id, model_id)
 );
 ```

@@ -18,6 +18,15 @@ HISTORY_DB = REPO_ROOT / "history.db"
 TOP_DIR = REPO_ROOT / "top"
 
 
+def _ensure_columns(conn: sqlite3.Connection) -> None:
+    """Add new columns to existing databases if missing."""
+    cursor = conn.execute("PRAGMA table_info(model_results)")
+    columns = {row[1] for row in cursor.fetchall()}
+    if "time_to_first_token" not in columns:
+        conn.execute("ALTER TABLE model_results ADD COLUMN time_to_first_token INTEGER")
+        conn.commit()
+
+
 def load_data(conn):
     runs_q = conn.execute(
         """SELECT r.id, r.timestamp, r.fastest_time, m.name
@@ -37,7 +46,7 @@ def load_data(conn):
     runs = []
     for run_id, ts, ft, fm in runs_q:
         results_q = conn.execute(
-            """SELECT m.name, mr.success, mr.response_time, mr.tokens_generated
+            """SELECT m.name, mr.success, mr.response_time, mr.tokens_generated, mr.time_to_first_token
                FROM model_results mr
                JOIN models m ON mr.model_id = m.id
                WHERE mr.run_id = ?""",
@@ -48,8 +57,8 @@ def load_data(conn):
             "fastestModel": fm or "N/A",
             "fastestTime": ft or 0,
             "models": [
-                {"model": m, "success": bool(s), "responseTime": rt, "tokensGenerated": tg}
-                for m, s, rt, tg in results_q
+                {"model": m, "success": bool(s), "responseTime": rt, "tokensGenerated": tg, "timeToFirstToken": ttft}
+                for m, s, rt, tg, ttft in results_q
             ],
         })
     return runs, models_intel
@@ -64,6 +73,10 @@ def compute_stats(runs, models_intel):
         successes = [r for r in results if r and r["success"]]
         tested = [r for r in results if r is not None]
         times = [r["responseTime"] for r in successes if r["responseTime"] and r["responseTime"] > 0]
+        ttft_arr = [
+            r["timeToFirstToken"] for r in successes
+            if r.get("timeToFirstToken") is not None and r["timeToFirstToken"] > 0
+        ]
         tps_arr = [
             r["tokensGenerated"] / (r["responseTime"] / 1000)
             for r in successes
@@ -76,6 +89,7 @@ def compute_stats(runs, models_intel):
             "uptime": len(successes) / len(tested) if tested else 0,
             "avgTime": sum(times) / len(times) if times else None,
             "bestTime": min(times) if times else None,
+            "avgTtft": sum(ttft_arr) / len(ttft_arr) if ttft_arr else None,
             "avgTps": sum(tps_arr) / len(tps_arr) if tps_arr else None,
             "wins": 0,
             "lastSeen": None,
@@ -134,6 +148,7 @@ def write_endpoint(slug: str, best_model: str, stats_record: dict, key_name: str
         "uptime": round(stats_record["uptime"] * 100, 1),
         "avg_response_time_ms": stats_record["avgTime"],
         "best_response_time_ms": stats_record["bestTime"],
+        "avg_time_to_first_token_ms": round(stats_record["avgTtft"], 1) if stats_record["avgTtft"] else None,
         "avg_throughput_tps": round(stats_record["avgTps"], 1) if stats_record["avgTps"] else None,
         "total_runs": stats_record["totalRuns"],
         "success_count": stats_record["successCount"],
@@ -154,6 +169,7 @@ def main():
 
     conn = sqlite3.connect(str(HISTORY_DB))
     try:
+        _ensure_columns(conn)
         runs, models_intel = load_data(conn)
         TOP_DIR.mkdir(parents=True, exist_ok=True)
         

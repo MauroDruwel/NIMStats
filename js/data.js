@@ -20,14 +20,14 @@ function loadFromDb(db) {
   const runById = new Map(runs.map((r, i) => [r._dbId, i]));
 
   const resQ = db.exec(
-    `SELECT mr.run_id, m.name, mr.success, e.text, mr.response_time, mr.tokens_generated, mr.total_tokens
+    `SELECT mr.run_id, m.name, mr.success, e.text, mr.response_time, mr.tokens_generated, mr.total_tokens, mr.time_to_first_token
      FROM model_results mr
      JOIN models m ON mr.model_id = m.id
      LEFT JOIN errors e ON mr.error_id = e.id
      ORDER BY mr.run_id ASC`
   );
   if (resQ.length && resQ[0].values.length) {
-    for (const [run_id, model, success, error, rt, tg, tt] of resQ[0].values) {
+    for (const [run_id, model, success, error, rt, tg, tt, ttft] of resQ[0].values) {
       const idx = runById.get(run_id);
       if (idx !== undefined) {
         runs[idx].models.push({
@@ -37,6 +37,7 @@ function loadFromDb(db) {
           responseTime: rt,
           tokensGenerated: tg,
           totalTokens: tt,
+          timeToFirstToken: ttft,
         });
       }
     }
@@ -76,6 +77,9 @@ function processData(data) {
     const successes = results.filter(r => r && r.success);
     const testedResults = results.filter(r => r !== null);
     const times = successes.map(r => r.responseTime).filter(t => t > 0);
+    const ttftArr = successes
+      .map(r => r.timeToFirstToken)
+      .filter(t => t != null && t > 0);
     const tpsArr = successes
       .filter(r => r.responseTime > 0)
       .map(r => r.tokensGenerated / (r.responseTime / 1000));
@@ -90,6 +94,7 @@ function processData(data) {
         ? r.tokensGenerated / (r.responseTime / 1000) : null),
       avgTime: times.length ? avg(times) : null,
       bestTime: times.length ? Math.min(...times) : null,
+      avgTtft: ttftArr.length ? avg(ttftArr) : null,
       avgTps: tpsArr.length ? avg(tpsArr) : null,
       wins: 0,
       errors: {},
@@ -170,6 +175,9 @@ function recomputeStats() {
     const successes = results.filter(r => r && r.success);
     const testedResults = results.filter(r => r !== null);
     const times = successes.map(r => r.responseTime).filter(t => t > 0);
+    const ttftArr = successes
+      .map(r => r.timeToFirstToken)
+      .filter(t => t != null && t > 0);
     const tpsArr = successes
       .filter(r => r.responseTime > 0)
       .map(r => r.tokensGenerated / (r.responseTime / 1000));
@@ -184,6 +192,7 @@ function recomputeStats() {
         ? r.tokensGenerated / (r.responseTime / 1000) : null),
       avgTime: times.length ? avg(times) : null,
       bestTime: times.length ? Math.min(...times) : null,
+      avgTtft: ttftArr.length ? avg(ttftArr) : null,
       avgTps: tpsArr.length ? avg(tpsArr) : null,
       wins: 0,
       errors: {},

@@ -34,13 +34,14 @@ def init_schema(conn: sqlite3.Connection) -> None:
             fastest_time     INTEGER
         );
         CREATE TABLE IF NOT EXISTS model_results (
-            run_id           INTEGER NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
-            model_id         INTEGER NOT NULL REFERENCES models(id),
-            success          INTEGER NOT NULL DEFAULT 0,
-            error_id         INTEGER          REFERENCES errors(id),
-            response_time    INTEGER,
-            tokens_generated INTEGER,
-            total_tokens     INTEGER,
+            run_id                INTEGER NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
+            model_id              INTEGER NOT NULL REFERENCES models(id),
+            success               INTEGER NOT NULL DEFAULT 0,
+            error_id              INTEGER          REFERENCES errors(id),
+            response_time         INTEGER,
+            tokens_generated      INTEGER,
+            total_tokens          INTEGER,
+            time_to_first_token   INTEGER,
             PRIMARY KEY (run_id, model_id)
         );
         CREATE INDEX IF NOT EXISTS idx_runs_ts  ON runs(timestamp);
@@ -52,6 +53,11 @@ def init_schema(conn: sqlite3.Connection) -> None:
     columns = [row[1] for row in cursor.fetchall()]
     if "intelligence_score" not in columns:
         conn.execute("ALTER TABLE models ADD COLUMN intelligence_score REAL DEFAULT NULL")
+
+    cursor = conn.execute("PRAGMA table_info(model_results)")
+    mr_columns = [row[1] for row in cursor.fetchall()]
+    if "time_to_first_token" not in mr_columns:
+        conn.execute("ALTER TABLE model_results ADD COLUMN time_to_first_token INTEGER")
 
 
 def _get_or_create(conn: sqlite3.Connection, table: str, col: str, value: Any) -> int | None:
@@ -85,8 +91,8 @@ def write_run(run: dict[str, Any], db_path: Path = HISTORY_DB) -> None:
             error_id = _get_or_create(conn, "errors", "text", m.get("error"))
             conn.execute(
                 """INSERT INTO model_results
-                   (run_id, model_id, success, error_id, response_time, tokens_generated, total_tokens)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                   (run_id, model_id, success, error_id, response_time, tokens_generated, total_tokens, time_to_first_token)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     run_id,
                     model_id,
@@ -95,6 +101,7 @@ def write_run(run: dict[str, Any], db_path: Path = HISTORY_DB) -> None:
                     m.get("responseTime"),
                     m.get("tokensGenerated"),
                     m.get("totalTokens"),
+                    m.get("timeToFirstToken"),
                 ),
             )
 
