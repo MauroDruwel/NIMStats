@@ -166,16 +166,29 @@ def main():
             
         stats = compute_stats(runs, models_intel)
         
+        # Filter out models that failed the last test (likely offline)
+        last_run_successes = set()
+        if runs:
+            last_run = runs[-1]
+            for m_res in last_run.get("models", []):
+                if m_res.get("success"):
+                    last_run_successes.add(m_res.get("model"))
+                    
+        eligible_models = [m for m in stats if m in last_run_successes]
+        if not eligible_models:
+            print("Warning: No models succeeded in the last run. Falling back to all models.")
+            eligible_models = list(stats.keys())
+        
         # 1. Balanced
-        best_balanced = max(stats, key=lambda m: stats[m]["score_balanced"])
+        best_balanced = max(eligible_models, key=lambda m: stats[m]["score_balanced"])
         write_endpoint("index", best_balanced, stats[best_balanced], "score_balanced")
         
         # 2. Speed
-        best_speed = max(stats, key=lambda m: stats[m]["score_speed"])
+        best_speed = max(eligible_models, key=lambda m: stats[m]["score_speed"])
         write_endpoint("speed", best_speed, stats[best_speed], "score_speed")
         
         # 3. Intelligence
-        best_intel = max(stats, key=lambda m: stats[m]["score_intel"])
+        best_intel = max(eligible_models, key=lambda m: stats[m]["score_intel"])
         write_endpoint("intelligence", best_intel, stats[best_intel], "score_intel")
         
     finally:
