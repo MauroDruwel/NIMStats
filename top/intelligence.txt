@@ -1,1 +1,1 @@
-meta/llama-3.2-90b-vision-instruct
+z-ai/glm-5.2
