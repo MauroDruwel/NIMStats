@@ -1,1 +1,1 @@
-stepfun-ai/step-3.5-flash
+mistralai/mistral-small-4-119b-2603

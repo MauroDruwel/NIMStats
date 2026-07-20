@@ -1,1 +1,1 @@
-stepfun-ai/step-3.5-flash
+nvidia/nemotron-3-nano-omni-30b-a3b-reasoning
