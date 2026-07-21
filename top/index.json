@@ -1,16 +1,16 @@
 {
-  "best_model": "stepfun-ai/step-3.5-flash",
-  "provider": "stepfun-ai",
+  "best_model": "nvidia/nemotron-3-super-120b-a12b",
+  "provider": "nvidia",
   "score": 70,
-  "intelligence": 26.0,
-  "uptime": 89.3,
-  "avg_response_time_ms": 9074.129082426127,
-  "best_response_time_ms": 2595,
-  "avg_time_to_first_token_ms": 4403.8,
-  "avg_throughput_tps": 91.8,
+  "intelligence": 25.4,
+  "uptime": 97.5,
+  "avg_response_time_ms": 9315.854700854701,
+  "best_response_time_ms": 1332,
+  "avg_time_to_first_token_ms": 2669.3,
+  "avg_throughput_tps": 77.8,
   "total_runs": 720,
-  "success_count": 643,
-  "wins": 53,
-  "last_seen": "2026-07-21T18:00:09Z",
-  "generated_at": "2026-07-21T18:18:52Z"
+  "success_count": 702,
+  "wins": 62,
+  "last_seen": "2026-07-21T19:00:09Z",
+  "generated_at": "2026-07-21T19:25:16Z"
 }
