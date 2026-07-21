@@ -1,16 +1,16 @@
 {
   "best_model": "mistralai/mistral-small-4-119b-2603",
   "provider": "mistralai",
-  "score": 71,
-  "intelligence": 19.6,
+  "score": 69,
+  "intelligence": 12.4,
   "uptime": 99.5,
-  "avg_response_time_ms": 4376.820051413882,
+  "avg_response_time_ms": 4373.076923076923,
   "best_response_time_ms": 971,
-  "avg_time_to_first_token_ms": 647.3,
-  "avg_throughput_tps": 90.6,
-  "total_runs": 391,
-  "success_count": 389,
-  "wins": 159,
-  "last_seen": "2026-07-20T23:00:08Z",
-  "generated_at": "2026-07-20T23:23:35Z"
+  "avg_time_to_first_token_ms": 646.2,
+  "avg_throughput_tps": 90.7,
+  "total_runs": 392,
+  "success_count": 390,
+  "wins": 160,
+  "last_seen": "2026-07-21T00:00:08Z",
+  "generated_at": "2026-07-21T00:23:03Z"
 }
