@@ -1,3 +1,7 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
 /top
   Content-Type: application/json
   Access-Control-Allow-Origin: *
