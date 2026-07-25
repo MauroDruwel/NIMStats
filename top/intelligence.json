@@ -1,16 +1,16 @@
 {
-  "best_model": "minimaxai/minimax-m2.7",
+  "best_model": "minimaxai/minimax-m3",
   "provider": "minimaxai",
-  "score": 54,
-  "intelligence": 38.1,
-  "uptime": 92.1,
-  "avg_response_time_ms": 52714.75414781297,
-  "best_response_time_ms": 7223,
-  "avg_time_to_first_token_ms": 43216.3,
-  "avg_throughput_tps": 18.8,
-  "total_runs": 720,
-  "success_count": 663,
+  "score": 58,
+  "intelligence": 44.4,
+  "uptime": 90.3,
+  "avg_response_time_ms": 79566.8864628821,
+  "best_response_time_ms": 4184,
+  "avg_time_to_first_token_ms": 8401.7,
+  "avg_throughput_tps": 8.1,
+  "total_runs": 507,
+  "success_count": 458,
   "wins": 0,
-  "last_seen": "2026-07-25T19:00:07Z",
-  "generated_at": "2026-07-25T19:15:31Z"
+  "last_seen": "2026-07-25T20:00:07Z",
+  "generated_at": "2026-07-25T20:07:41Z"
 }
