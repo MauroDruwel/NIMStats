@@ -1,1 +1,1 @@
-minimaxai/minimax-m2.7
+minimaxai/minimax-m3
