@@ -1,1 +1,1 @@
-mistralai/mistral-small-4-119b-2603
+nvidia/nemotron-3-super-120b-a12b
