@@ -3,14 +3,14 @@
   "provider": "z-ai",
   "score": 66,
   "intelligence": 52.6,
-  "uptime": 97.6,
-  "avg_response_time_ms": 29564.971550497867,
+  "uptime": 97.8,
+  "avg_response_time_ms": 29621.944602272728,
   "best_response_time_ms": 3991,
-  "avg_time_to_first_token_ms": 9916.4,
+  "avg_time_to_first_token_ms": 9979.3,
   "avg_throughput_tps": 28.5,
   "total_runs": 720,
-  "success_count": 703,
+  "success_count": 704,
   "wins": 1,
-  "last_seen": "2026-08-06T22:00:11Z",
-  "generated_at": "2026-08-06T22:13:13Z"
+  "last_seen": "2026-08-06T23:00:07Z",
+  "generated_at": "2026-08-06T23:07:05Z"
 }
