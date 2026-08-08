@@ -28,7 +28,7 @@
   --filter-active-bg: rgba(255, 255, 255, 0.08);
 }
 
-body.light-theme {
+html.light-theme, body.light-theme {
   --bg: #f8f9fa;        /* Google Light Gray Background */
   --bg-card: #ffffff;   /* Pure White Cards */
   --bg-card2: #f1f3f4;  /* Google Light Secondary */
@@ -63,14 +63,14 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;background:var(--bg-gl
 
 /* Nav */
 nav{position:sticky;top:0;z-index:200;background:rgba(23,24,28,0.95);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);height:64px;display:flex;align-items:center;padding:0 32px;gap:8px}
-body.light-theme nav{background:rgba(255,255,255,0.92)}
+html.light-theme, body.light-theme nav{background:rgba(255,255,255,0.92)}
 .nav-brand{font-size:20px;font-weight:800;color:var(--accent);letter-spacing:-0.5px;margin-right:24px;white-space:nowrap;text-shadow:0 0 12px rgba(118,185,0,0.15)}
 .nav-brand span{color:var(--text);font-weight:300}
 .nav-tabs{display:flex;gap:4px;flex:1}
 .nav-tab{background:none;border:none;color:var(--text-dim);font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;padding:8px 16px;border-radius:20px;cursor:pointer;transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1);white-space:nowrap}
 .nav-tab:hover{color:var(--text);background:var(--bg-hover)}
 .nav-tab.active{color:#ffffff;background:rgba(118,185,0,0.16);border:1px solid rgba(118,185,0,0.25);font-weight:600}
-body.light-theme .nav-tab.active{color:var(--accent);background:rgba(118,185,0,0.08);border-color:rgba(118,185,0,0.18)}
+html.light-theme, body.light-theme .nav-tab.active{color:var(--accent);background:rgba(118,185,0,0.08);border-color:rgba(118,185,0,0.18)}
 .nav-status{margin-left:auto;font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
 
 /* Theme Toggle Button */
@@ -99,8 +99,8 @@ body.light-theme .nav-tab.active{color:var(--accent);background:rgba(118,185,0,0
 .theme-toggle:active {
   transform: scale(0.95);
 }
-body.light-theme .theme-icon-light { display: none; }
-body.light-theme .theme-icon-dark { display: block; }
+html.light-theme, body.light-theme .theme-icon-light { display: none; }
+html.light-theme, body.light-theme .theme-icon-dark { display: block; }
 body:not(.light-theme) .theme-icon-light { display: block; }
 body:not(.light-theme) .theme-icon-dark { display: none; }
 
@@ -476,6 +476,6 @@ section[data-tab].active {
   z-index: 1;
   pointer-events: none;
 }
-body.light-theme .sliding-indicator {
+html.light-theme, body.light-theme .sliding-indicator {
   border-color: rgba(30, 142, 62, 0.15);
 }

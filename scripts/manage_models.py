@@ -8,7 +8,7 @@ Usage:
   python scripts/manage_models.py purge            # Remove all DB models not in ALL_MODELS
 """
 
-import re
+import ast
 import sqlite3
 import sys
 from pathlib import Path
@@ -20,20 +20,38 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 TEST_MODELS_FILE = SCRIPT_DIR / "test_models.py"
 
 
+def _find_all_models_node(source: str):
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "ALL_MODELS":
+                    if isinstance(node.value, ast.List):
+                        return node, node.value
+    raise RuntimeError("Could not find ALL_MODELS in test_models.py")
+
+
 def _read_all_models() -> list[str]:
     source = TEST_MODELS_FILE.read_text(encoding="utf-8")
-    match = re.search(r"ALL_MODELS\s*=\s*\[(.*?)\]", source, re.DOTALL)
-    if not match:
-        raise RuntimeError("Could not find ALL_MODELS in test_models.py")
-    return re.findall(r'"([^"]+)"', match.group(1))
+    _, list_node = _find_all_models_node(source)
+    return [
+        elt.value
+        for elt in list_node.elts
+        if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
+    ]
 
 
 def _write_all_models(models: list[str]) -> None:
     source = TEST_MODELS_FILE.read_text(encoding="utf-8")
-    lines = ['    "' + m + '",' for m in models]
-    block = "ALL_MODELS = [\n" + "\n".join(lines) + "\n]\n"
-    source = re.sub(r"ALL_MODELS\s*=\s*\[.*?\n\]", block, source, count=1, flags=re.DOTALL)
-    TEST_MODELS_FILE.write_text(source, encoding="utf-8")
+    assign_node, _ = _find_all_models_node(source)
+    source_lines = source.splitlines(keepends=True)
+    indent = " " * 4
+    new_body = "\n".join(indent + f'"{m}",' for m in models)
+    new_block = "ALL_MODELS = [\n" + new_body + "\n]\n"
+    start = assign_node.lineno - 1
+    end = assign_node.end_lineno
+    source_lines[start:end] = [new_block]
+    TEST_MODELS_FILE.write_text("".join(source_lines), encoding="utf-8")
 
 
 def _db_connect() -> sqlite3.Connection:
