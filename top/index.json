@@ -1,16 +1,16 @@
 {
-  "best_model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-  "provider": "nvidia",
+  "best_model": "z-ai/glm-5.2",
+  "provider": "z-ai",
   "score": 66,
-  "intelligence": 15.0,
-  "uptime": 90.3,
-  "avg_response_time_ms": 8227.370769230769,
-  "best_response_time_ms": 1779,
-  "avg_time_to_first_token_ms": 1964.5,
-  "avg_throughput_tps": 70.7,
+  "intelligence": 52.6,
+  "uptime": 98.6,
+  "avg_response_time_ms": 32420.17323943662,
+  "best_response_time_ms": 3991,
+  "avg_time_to_first_token_ms": 12775.1,
+  "avg_throughput_tps": 24.1,
   "total_runs": 720,
-  "success_count": 650,
-  "wins": 228,
-  "last_seen": "2026-08-08T10:00:07Z",
-  "generated_at": "2026-08-08T10:09:48Z"
+  "success_count": 710,
+  "wins": 1,
+  "last_seen": "2026-08-08T11:00:10Z",
+  "generated_at": "2026-08-08T11:15:45Z"
 }
