@@ -1,1 +1,1 @@
-z-ai/glm-5.2
+nvidia/nemotron-3-nano-omni-30b-a3b-reasoning
