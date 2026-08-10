@@ -1,1 +1,1 @@
-minimaxai/minimax-m3
+z-ai/glm-5.2
