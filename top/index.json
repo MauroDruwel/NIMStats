@@ -1,16 +1,16 @@
 {
-  "best_model": "z-ai/glm-5.2",
-  "provider": "z-ai",
-  "score": 61,
-  "intelligence": 52.6,
+  "best_model": "nvidia/nemotron-3-super-120b-a12b",
+  "provider": "nvidia",
+  "score": 67,
+  "intelligence": null,
   "uptime": 98.2,
-  "avg_response_time_ms": 33413.898161244695,
-  "best_response_time_ms": 3991,
-  "avg_time_to_first_token_ms": 13818.4,
-  "avg_throughput_tps": null,
+  "avg_response_time_ms": 11453.951909476662,
+  "best_response_time_ms": 1332,
+  "avg_time_to_first_token_ms": 5395.6,
+  "avg_throughput_tps": 26.7,
   "total_runs": 720,
   "success_count": 707,
-  "wins": 2,
-  "last_seen": "2026-08-12T00:00:09Z",
-  "generated_at": "2026-08-12T00:10:26Z"
+  "wins": 163,
+  "last_seen": "2026-08-12T01:00:08Z",
+  "generated_at": "2026-08-12T01:12:14Z"
 }
