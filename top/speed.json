@@ -1,16 +1,16 @@
 {
   "best_model": "openai/gpt-oss-120b",
   "provider": "openai",
-  "score": 66,
+  "score": 67,
   "intelligence": 24.1,
   "uptime": 82.1,
-  "avg_response_time_ms": 54182.881556683584,
+  "avg_response_time_ms": 53893.86125211506,
   "best_response_time_ms": 2944,
-  "avg_time_to_first_token_ms": 51035.5,
-  "avg_throughput_tps": 65.7,
+  "avg_time_to_first_token_ms": 50748.9,
+  "avg_throughput_tps": 65.9,
   "total_runs": 720,
   "success_count": 591,
-  "wins": 134,
-  "last_seen": "2026-08-13T19:00:08Z",
-  "generated_at": "2026-08-13T19:08:16Z"
+  "wins": 135,
+  "last_seen": "2026-08-13T20:00:08Z",
+  "generated_at": "2026-08-13T20:10:27Z"
 }
