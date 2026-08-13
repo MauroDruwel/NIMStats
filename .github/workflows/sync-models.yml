@@ -1,0 +1,51 @@
+name: Sync NVIDIA model list
+
+on:
+  schedule:
+    # Daily at 05:17 UTC
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Sync model list
+        env:
+          ARTIFICIAL_ANALYSIS_API_KEY: ${{ secrets.ARTIFICIAL_ANALYSIS_API_KEY }}
+        run: |
+          python3 scripts/sync_models.py --report-path "$RUNNER_TEMP/sync-report.md"
+          python3 scripts/manage_models.py purge || true
+          python3 scripts/generate_best.py || true
+
+      - name: Open or update PR with changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- scripts/test_models.py history.db top/; then
+            echo "::notice::No model list changes needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git switch -C chore/sync-model-list
+          git add scripts/test_models.py history.db top/
+          git commit -m "chore: sync NVIDIA model list"
+          git push --force origin HEAD:chore/sync-model-list
+          PR_NUM=$(gh pr list --head chore/sync-model-list --json number -q '.[0].number')
+          if [ -n "$PR_NUM" ]; then
+            gh pr edit "$PR_NUM" --title "chore: sync NVIDIA model list" \
+              --body-file "$RUNNER_TEMP/sync-report.md"
+          else
+            gh pr create --base main --head chore/sync-model-list \
+              --title "chore: sync NVIDIA model list" \
+              --body-file "$RUNNER_TEMP/sync-report.md"
+          fi
