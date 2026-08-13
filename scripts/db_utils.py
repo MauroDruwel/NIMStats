@@ -60,13 +60,28 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE model_results ADD COLUMN time_to_first_token INTEGER")
 
 
+_SQL_SELECT: dict[tuple[str, str], str] = {
+    ("prompts", "text"): "SELECT id FROM prompts WHERE text = ?",
+    ("models", "name"): "SELECT id FROM models WHERE name = ?",
+    ("errors", "text"): "SELECT id FROM errors WHERE text = ?",
+}
+_SQL_INSERT: dict[tuple[str, str], str] = {
+    ("prompts", "text"): "INSERT INTO prompts (text) VALUES (?)",
+    ("models", "name"): "INSERT INTO models (name) VALUES (?)",
+    ("errors", "text"): "INSERT INTO errors (text) VALUES (?)",
+}
+
+
 def _get_or_create(conn: sqlite3.Connection, table: str, col: str, value: Any) -> int | None:
     if not value:
         return None
-    row = conn.execute(f"SELECT id FROM {table} WHERE {col} = ?", (value,)).fetchone()
+    key = (table, col)
+    if key not in _SQL_SELECT:
+        raise ValueError(f"Disallowed table/column combination: {table!r}, {col!r}")
+    row = conn.execute(_SQL_SELECT[key], (value,)).fetchone()
     if row:
         return row[0]
-    cur = conn.execute(f"INSERT INTO {table} ({col}) VALUES (?)", (value,))
+    cur = conn.execute(_SQL_INSERT[key], (value,))
     return cur.lastrowid
 
 
