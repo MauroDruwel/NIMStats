@@ -77,14 +77,27 @@ jobs:
       - name: Generate top model endpoint
         run: python3 scripts/generate_best.py
       
-      - name: Commit and push results
+      - name: Open or update PR with results
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+          if git diff --quiet -- history.db top/; then
+            echo "::notice::No result changes."
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git switch -C chore/benchmark-results
           git add history.db top/
-          if ! git diff --cached --quiet; then
-            git commit -m "Update benchmark results"
-            git push
+          git commit -m "Update benchmark results"
+          git push --force origin HEAD:chore/benchmark-results
+          PR_NUM=$(gh pr list --head chore/benchmark-results --json number -q '.[0].number')
+          if [ -n "$PR_NUM" ]; then
+            gh pr edit "$PR_NUM" --title "Update benchmark results" \
+              --body "Automated benchmark results. See the [dashboard](https://nimstats.maurodruwel.be/)."
           else
-            echo "No history updates to commit"
+            gh pr create --base main --head chore/benchmark-results \
+              --title "Update benchmark results" \
+              --body "Automated benchmark results. See the [dashboard](https://nimstats.maurodruwel.be/)."
           fi
