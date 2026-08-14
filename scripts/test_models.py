@@ -80,6 +80,7 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
         "top_p": 0.9,
         "max_tokens": 500,
         "stream": True,
+        "stream_options": {"include_usage": True},
     }
     body = json.dumps(payload).encode("utf-8")
 
