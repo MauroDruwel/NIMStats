@@ -43,7 +43,7 @@ jobs:
             4. Decide on changes:
                - REMOVE models in ALL_MODELS that are absent from the NVIDIA list (NVIDIA no longer hosts them).
                - RENAME models NVIDIA republished under a new id, using the RENAMES mapping in sync_models.py.
-               - ADD new chat models worth benchmarking: they must be hosted on NVIDIA, be text-chat models (exclude embeddings, rerankers, vision/audio-only, guard/safety, image-gen, etc.), and have an Artificial Analysis intelligence index of at least 50 (the helper fuzzy-matches this; sanity-check suspicious matches yourself). Cap new additions at 8 per run. If no benchmark data is available, do not add models.
+               - ADD new chat models worth benchmarking. Use your judgment on what people will actually use: NVIDIA hosts the newest flagship releases, so prefer those. The Artificial Analysis intelligence index is guidance, not a hard cutoff — a rough bar of ~40, but you may include notably newer or widely-used models below that (e.g. a brand-new flagship release at 38 is a better add than a 3-year-old model at 60). Exclude non-chat models (embeddings, rerankers, vision/audio-only, guard/safety, image-gen, etc.) and exclude niche or domain-specialized models unless they are clearly popular. Cap new additions at 8 per run. If no benchmark data is available, do not add models.
 
             5. Apply the changes: edit the ALL_MODELS list in scripts/test_models.py (you can reuse the logic in sync_models.py / manage_models.py rather than hand-editing), then run:
                python3 scripts/manage_models.py purge
