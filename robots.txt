@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://nimstats.maurodruwel.be/sitemap.xml
