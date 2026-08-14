@@ -245,7 +245,7 @@ def main() -> int:
     parser.add_argument("--report-path", default=None,
                         help="write the markdown report to this file")
     parser.add_argument("--min-score", type=float,
-                        default=float(os.getenv("AA_MIN_SCORE", "50")),
+                        default=float(os.getenv("AA_MIN_SCORE", "40")),
                         help="minimum Artificial Analysis index for new additions")
     parser.add_argument("--max-additions", type=int,
                         default=int(os.getenv("MAX_ADDITIONS", "8")),
