@@ -24,11 +24,10 @@ jobs:
       - name: Run OpenCode sync agent
         uses: anomalyco/opencode/github@latest
         env:
-          NVIDIA_API_KEY: ${{ secrets.NIM_API_KEY }}
           ARTIFICIAL_ANALYSIS_API_KEY: ${{ secrets.ARTIFICIAL_ANALYSIS_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          model: nvidia/nemotron-3-super-120b-a12b
+          model: opencode/deepseek-v4-flash-free
           use_github_token: true
           share: false
           prompt: |
