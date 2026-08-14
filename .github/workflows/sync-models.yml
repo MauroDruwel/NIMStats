@@ -7,45 +7,56 @@ on:
   workflow_dispatch:
 
 permissions:
+  id-token: write
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
-      - name: Sync model list
+      - name: Run OpenCode sync agent
+        uses: anomalyco/opencode/github@latest
         env:
+          NVIDIA_API_KEY: ${{ secrets.NIM_API_KEY }}
           ARTIFICIAL_ANALYSIS_API_KEY: ${{ secrets.ARTIFICIAL_ANALYSIS_API_KEY }}
-        run: |
-          python3 scripts/sync_models.py --report-path "$RUNNER_TEMP/sync-report.md"
-          python3 scripts/manage_models.py purge || true
-          python3 scripts/generate_best.py || true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          model: nvidia/nemotron-3-super-120b-a12b
+          use_github_token: true
+          share: false
+          prompt: |
+            You are the NIMStats model-list sync agent, running on a daily schedule. Keep ALL_MODELS in scripts/test_models.py aligned with the models NVIDIA actually hosts.
 
-      - name: Open or update PR with changes
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          if git diff --quiet -- scripts/test_models.py history.db top/; then
-            echo "::notice::No model list changes needed."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git switch -C chore/sync-model-list
-          git add scripts/test_models.py history.db top/
-          git commit -m "chore: sync NVIDIA model list"
-          git push --force origin HEAD:chore/sync-model-list
-          PR_NUM=$(gh pr list --head chore/sync-model-list --json number -q '.[0].number')
-          if [ -n "$PR_NUM" ]; then
-            gh pr edit "$PR_NUM" --title "chore: sync NVIDIA model list" \
-              --body-file "$RUNNER_TEMP/sync-report.md"
-          else
-            gh pr create --base main --head chore/sync-model-list \
-              --title "chore: sync NVIDIA model list" \
-              --body-file "$RUNNER_TEMP/sync-report.md"
-          fi
+            1. Fetch the published NVIDIA NIM model list:
+               curl -s https://integrate.api.nvidia.com/v1/models
+
+            2. Read scripts/test_models.py (the ALL_MODELS list) and scripts/sync_models.py (a helper that already implements the diff logic; ARTIFICIAL_ANALYSIS_API_KEY is available in the environment for benchmark data).
+
+            3. Run `python3 scripts/sync_models.py --dry-run` as a starting point and inspect its output carefully.
+
+            4. Decide on changes:
+               - REMOVE models in ALL_MODELS that are absent from the NVIDIA list (NVIDIA no longer hosts them).
+               - RENAME models NVIDIA republished under a new id, using the RENAMES mapping in sync_models.py.
+               - ADD new chat models worth benchmarking: they must be hosted on NVIDIA, be text-chat models (exclude embeddings, rerankers, vision/audio-only, guard/safety, image-gen, etc.), and have an Artificial Analysis intelligence index of at least 50 (the helper fuzzy-matches this; sanity-check suspicious matches yourself). Cap new additions at 8 per run. If no benchmark data is available, do not add models.
+
+            5. Apply the changes: edit the ALL_MODELS list in scripts/test_models.py (you can reuse the logic in sync_models.py / manage_models.py rather than hand-editing), then run:
+               python3 scripts/manage_models.py purge
+               python3 scripts/generate_best.py
+
+            6. Validate: `python3 -m py_compile scripts/test_models.py scripts/sync_models.py` and confirm the groups in test_models.py are still balanced (they derive from the list size).
+
+            7. If the model list is unchanged, print "No model list changes" and stop — do NOT create a PR.
+
+            8. Otherwise open or update the PR:
+               - Branch: chore/sync-model-list (never push to main)
+               - Title: "chore: sync NVIDIA model list"
+               - Body: a markdown report with the date, the removed models, the renamed models, and the added models with their Artificial Analysis intelligence index (and a note if benchmark data was unavailable).
+               - Use the gh CLI (authenticated via GITHUB_TOKEN). First run `gh pr list --head chore/sync-model-list --json number -q '.[0].number'`; if a PR exists, update it with `gh pr edit`, otherwise create it with `gh pr create --base main --head chore/sync-model-list`.
+               - Commit message: "chore: sync NVIDIA model list"
