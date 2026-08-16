@@ -37,6 +37,8 @@ ALL_MODELS = [
     "stepfun-ai/step-3.7-flash",
     "thinkingmachines/inkling",
     "nvidia/nemotron-3-ultra-550b-a55b",
+    "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "openai/gpt-oss-20b",
 ]
 
 GROUP1_MODELS = ALL_MODELS[: len(ALL_MODELS) // 2 + len(ALL_MODELS) % 2]
