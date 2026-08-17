@@ -1,16 +1,16 @@
 {
   "best_model": "nvidia/nemotron-3.5-lightning-30b-a3b",
   "provider": "nvidia",
-  "score": 77,
-  "intelligence": 23.6,
+  "score": 74,
+  "intelligence": 15.0,
   "uptime": 100.0,
-  "avg_response_time_ms": 5970.0,
+  "avg_response_time_ms": 5260.75,
   "best_response_time_ms": 1899,
-  "avg_time_to_first_token_ms": 5969.3,
-  "avg_throughput_tps": 170.5,
-  "total_runs": 3,
-  "success_count": 3,
-  "wins": 2,
-  "last_seen": "2026-08-17T15:00:10Z",
-  "generated_at": "2026-08-17T15:12:48Z"
+  "avg_time_to_first_token_ms": 5260.2,
+  "avg_throughput_tps": 167.7,
+  "total_runs": 4,
+  "success_count": 4,
+  "wins": 3,
+  "last_seen": "2026-08-17T16:00:07Z",
+  "generated_at": "2026-08-17T16:14:04Z"
 }
