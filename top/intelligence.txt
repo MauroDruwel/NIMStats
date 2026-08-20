@@ -1,1 +1,1 @@
-z-ai/glm-5.2
+nvidia/nemotron-3-ultra-550b-a55b
