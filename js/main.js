@@ -12,7 +12,7 @@ function createCustomDropdown(containerId, options, activeValue, onChangeCallbac
   // Helper to set trigger content based on selection
   function updateTrigger(val) {
     if (!val) {
-      triggerContent.innerHTML = 'Select a model...';
+      triggerContent.innerHTML = t('ex.placeholder');
       return;
     }
     const pm = providerMeta(val);
@@ -23,7 +23,7 @@ function createCustomDropdown(containerId, options, activeValue, onChangeCallbac
     triggerContent.innerHTML = `
       ${providerChip(val, true)}
       <span style="font-weight:600;font-size:13px">${short}</span>
-      <span style="font-size:10px;font-weight:700;background:var(--bg-card2);padding:1px 5px;border-radius:4px;color:${scoreColor};font-family:'JetBrains Mono'">Score: ${score}</span>
+      <span style="font-size:10px;font-weight:700;background:var(--bg-card2);padding:1px 5px;border-radius:4px;color:${scoreColor};font-family:'JetBrains Mono'">评分：${score}</span>
     `;
   }
 
@@ -84,10 +84,10 @@ function createCustomDropdown(containerId, options, activeValue, onChangeCallbac
             <div class="dropdown-item-name">${short}</div>
             <div class="dropdown-item-details">
               ${providerChip(opt, true)}
-              <span class="dropdown-item-stats">Up: ${uptimePct} | Speed: ${avgSpeed}</span>
+              <span class="dropdown-item-stats">${t('dropdown.stats', { up: uptimePct, sp: avgSpeed })}</span>
             </div>
           </div>
-          <span class="dropdown-item-score-badge" style="background:${scoreBg};color:${scoreColor}">Score: ${s.score || 0}</span>
+          <span class="dropdown-item-score-badge" style="background:${scoreBg};color:${scoreColor}">${t('dropdown.score', { score: s.score || 0 })}</span>
         </li>
       `;
     }).join('');
@@ -271,8 +271,7 @@ async function init() {
     state.compareModelB = state.modelNames.includes(defaultB) ? defaultB : (sortedModels[1] || sortedModels[0] || '');
 
     // Nav status
-    document.getElementById('nav-status').textContent =
-      `${state.rawRuns.length} runs · ${state.modelNames.length} models`;
+    updateNavStatus();
 
     // Populate selects
     populateExplorerSelect();
@@ -311,12 +310,22 @@ async function init() {
     setTimeout(updateAllIndicators, 100);
     window.addEventListener('resize', updateAllIndicators);
 
+    // 应用当前语言到静态标记（导航、卡片、表格、按钮等）
+    applyLang();
+
   } catch (err) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('app').classList.add('visible');
     document.getElementById('error-state').style.display = 'flex';
-    document.getElementById('error-msg').textContent = `Error: ${err.message}. Make sure history.db exists and you're serving via HTTP.`;
+    document.getElementById('error-msg').textContent = t('error.msg', { msg: err.message });
     console.error('Failed to load data:', err);
+  }
+}
+
+function updateNavStatus() {
+  const el = document.getElementById('nav-status');
+  if (el && state.rawRuns) {
+    el.textContent = t('nav.status', { runs: state.rawRuns.length, models: state.modelNames.length });
   }
 }
 

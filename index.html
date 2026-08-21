@@ -32,47 +32,48 @@
 
 <div id="loading">
   <div class="spinner"></div>
-  <p>Loading benchmark data…</p>
+  <p data-i18n="loading.text">正在加载基准测试数据…</p>
 </div>
 
 <div id="app">
   <nav>
     <div class="nav-brand">NIM<span>Stats</span></div>
     <div class="nav-tabs">
-      <button class="nav-tab active" data-goto="overview">📊 Overview</button>
-      <button class="nav-tab" data-goto="leaderboard">🏆 Leaderboard</button>
-      <button class="nav-tab" data-goto="explorer">🔬 Explorer</button>
-      <button class="nav-tab" data-goto="timeline">⏱ Timeline</button>
-      <button class="nav-tab" data-goto="compare">⚔️ Compare</button>
+      <button class="nav-tab active" data-goto="overview">📊 <span data-i18n="nav.overview">概览</span></button>
+      <button class="nav-tab" data-goto="leaderboard">🏆 <span data-i18n="nav.leaderboard">排行榜</span></button>
+      <button class="nav-tab" data-goto="explorer">🔬 <span data-i18n="nav.explorer">模型详情</span></button>
+      <button class="nav-tab" data-goto="timeline">⏱ <span data-i18n="nav.timeline">时间线</span></button>
+      <button class="nav-tab" data-goto="compare">⚔️ <span data-i18n="nav.compare">对比</span></button>
     </div>
-    <button class="theme-toggle" id="theme-toggle" title="Toggle Theme" aria-label="Toggle theme">
+    <button class="theme-toggle" id="theme-toggle" title="切换主题" data-i18n-title="theme.toggle" aria-label="切换主题">
       <span class="theme-icon-light">☀️</span>
       <span class="theme-icon-dark">🌙</span>
     </button>
+    <select class="lang-toggle" id="lang-select" onchange="setLang(this.value)" title="切换语言 / Switch language" style="height:32px;padding:0 8px;margin-left:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text);font-family:'Outfit',sans-serif;font-weight:600;font-size:13px;cursor:pointer"></select>
     <div class="nav-status" id="nav-status"></div>
   </nav>
 
   <main>
     <div id="error-state">
       <div class="err-icon">⚠️</div>
-      <h2>Failed to load benchmark data</h2>
-      <p id="error-msg">Could not fetch history.db. Make sure the file exists and you're serving this page via HTTP.</p>
+      <h2 data-i18n="error.title">加载基准测试数据失败</h2>
+      <p id="error-msg">无法获取 history.db。请确保该文件存在，且通过 HTTP 方式访问本页面。</p>
     </div>
 
     <!-- OVERVIEW -->
     <section data-tab="overview" class="active">
       <div class="section-header mb-4">
         <div>
-          <div class="section-title">Dashboard Overview</div>
+          <div class="section-title" data-i18n="ov.title">仪表盘概览</div>
           <div class="section-sub" id="overview-sub"></div>
         </div>
         <div class="filter-controls">
-          <span class="filter-label">Runs limit:</span>
+          <span class="filter-label" data-i18n="ov.runs_limit">运行次数：</span>
           <div class="filter-btns">
-            <button class="filter-btn" data-limit="30">30 runs</button>
-            <button class="filter-btn" data-limit="50">50 runs</button>
-            <button class="filter-btn" data-limit="100">100 runs</button>
-            <button class="filter-btn" data-limit="all">All</button>
+            <button class="filter-btn" data-limit="30" data-i18n="ov.limit.30">30 次</button>
+            <button class="filter-btn" data-limit="50" data-i18n="ov.limit.50">50 次</button>
+            <button class="filter-btn" data-limit="100" data-i18n="ov.limit.100">100 次</button>
+            <button class="filter-btn" data-limit="all" data-i18n="ov.limit.all">全部</button>
           </div>
         </div>
       </div>
@@ -81,36 +82,36 @@
       <!-- Intelligence & Capability Analysis -->
       <div class="chart-row chart-row-2" style="margin-bottom:20px">
         <div class="card">
-          <div class="card-title"><span class="dot" style="background:var(--purple)"></span>Model Intelligence Index</div>
-          <div class="chart-wrap" style="position:relative"><canvas id="chart-intelligence-bar"></canvas><div id="overview-no-intel" class="no-data" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-dim)">⚠️ Supply ARTIFICIAL_ANALYSIS_API_KEY to load benchmark scores</div></div>
+          <div class="card-title"><span class="dot" style="background:var(--purple)"></span><span data-i18n="card.model_intel">模型智能指数</span></div>
+          <div class="chart-wrap" style="position:relative"><canvas id="chart-intelligence-bar"></canvas><div id="overview-no-intel" class="no-data" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-dim)" data-i18n="no_intel">⚠️ 请提供 ARTIFICIAL_ANALYSIS_API_KEY 以加载基准分数</div></div>
         </div>
         <div class="card">
-          <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Intelligence vs. Throughput (Value Frontier)</div>
-          <div class="chart-wrap" style="position:relative"><canvas id="chart-intelligence-scatter"></canvas><div id="overview-no-scatter" class="no-data" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-dim)">⚠️ Supply ARTIFICIAL_ANALYSIS_API_KEY to load value frontier</div></div>
+          <div class="card-title"><span class="dot" style="background:var(--blue)"></span><span data-i18n="card.value_frontier">智能 vs. 吞吐（价值前沿）</span></div>
+          <div class="chart-wrap" style="position:relative"><canvas id="chart-intelligence-scatter"></canvas><div id="overview-no-scatter" class="no-data" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-dim)" data-i18n="no_scatter">⚠️ 请提供 ARTIFICIAL_ANALYSIS_API_KEY 以加载价值前沿</div></div>
         </div>
       </div>
 
       <div class="chart-row chart-row-2" style="margin-bottom:20px">
         <div class="card">
-          <div class="card-title"><span class="dot"></span>Success Count per Run</div>
+          <div class="card-title"><span class="dot"></span><span data-i18n="card.success_count">每次运行成功数</span></div>
           <div class="chart-wrap"><canvas id="chart-success-count"></canvas></div>
         </div>
         <div class="card">
-          <div class="card-title"><span class="dot"></span>Success Rate Over Time</div>
+          <div class="card-title"><span class="dot"></span><span data-i18n="card.success_rate">成功率趋势</span></div>
           <div class="chart-wrap"><canvas id="chart-success-rate"></canvas></div>
         </div>
       </div>
       <div class="chart-row chart-row-3">
         <div class="card">
-          <div class="card-title"><span class="dot"></span>Top 10 Fastest Models (Avg)</div>
+          <div class="card-title"><span class="dot"></span><span data-i18n="card.fastest">最快模型 Top 10（平均）</span></div>
           <div class="chart-wrap-lg"><canvas id="chart-fastest"></canvas></div>
         </div>
         <div class="card">
-          <div class="card-title"><span class="dot"></span>Top 10 Throughput (tok/s)</div>
+          <div class="card-title"><span class="dot"></span><span data-i18n="card.throughput">最高吞吐 Top 10（tok/s）</span></div>
           <div class="chart-wrap-lg"><canvas id="chart-throughput"></canvas></div>
         </div>
         <div class="card">
-          <div class="card-title"><span class="dot"></span>Model Reliability</div>
+          <div class="card-title"><span class="dot"></span><span data-i18n="card.reliability">模型可靠性</span></div>
           <div class="reliability-grid" id="reliability-grid" style="height:260px;overflow-y:auto"></div>
         </div>
       </div>
@@ -120,37 +121,37 @@
     <section data-tab="leaderboard">
       <div class="section-header mb-4">
         <div>
-          <div class="section-title">Model Leaderboard</div>
-          <div class="section-sub">Ranked by composite score - click a row to explore that model</div>
+          <div class="section-title" data-i18n="lb.title">模型排行榜</div>
+          <div class="section-sub" data-i18n="lb.sub">按综合评分排名 - 点击某行查看该模型详情</div>
         </div>
         <div class="filter-controls">
-          <span class="filter-label">Runs limit:</span>
+          <span class="filter-label" data-i18n="ov.runs_limit">运行次数：</span>
           <div class="filter-btns">
-            <button class="filter-btn" data-limit="30">30 runs</button>
-            <button class="filter-btn" data-limit="50">50 runs</button>
-            <button class="filter-btn" data-limit="100">100 runs</button>
-            <button class="filter-btn" data-limit="all">All</button>
+            <button class="filter-btn" data-limit="30" data-i18n="ov.limit.30">30 次</button>
+            <button class="filter-btn" data-limit="50" data-i18n="ov.limit.50">50 次</button>
+            <button class="filter-btn" data-limit="100" data-i18n="ov.limit.100">100 次</button>
+            <button class="filter-btn" data-limit="all" data-i18n="ov.limit.all">全部</button>
           </div>
         </div>
       </div>
       <div class="table-controls">
-        <input class="search-input" id="lb-search" type="text" placeholder="🔍 Filter by model name…">
+        <input class="search-input" id="lb-search" type="text" data-i18n-ph="lb.search_ph" placeholder="🔍 按模型名称筛选…">
       </div>
       <div class="table-wrap">
         <table id="lb-table">
           <thead>
             <tr>
-              <th data-col="rank" class="sorted"># <span class="sort-arrow">↓</span></th>
-              <th data-col="model">Model</th>
-              <th data-col="score">Score <span class="sort-arrow">↓</span></th>
-              <th data-col="uptime">Uptime <span class="sort-arrow"></span></th>
-              <th data-col="intelligence">Intel <span class="sort-arrow"></span></th>
-              <th data-col="avgTime">Avg Time <span class="sort-arrow"></span></th>
-              <th data-col="avgTtft">TTFT <span class="sort-arrow"></span></th>
-              <th data-col="bestTime">Best Time <span class="sort-arrow"></span></th>
-              <th data-col="avgTps">Throughput <span class="sort-arrow"></span></th>
-              <th data-col="wins">Wins <span class="sort-arrow"></span></th>
-              <th data-col="trend">Trend</th>
+              <th data-col="rank" class="sorted"><span data-i18n="th.rank">#</span> <span class="sort-arrow">↓</span></th>
+              <th data-col="model"><span data-i18n="th.model">模型</span></th>
+              <th data-col="score"><span data-i18n="th.score">评分</span> <span class="sort-arrow">↓</span></th>
+              <th data-col="uptime"><span data-i18n="th.uptime">在线率</span> <span class="sort-arrow"></span></th>
+              <th data-col="intelligence"><span data-i18n="th.intelligence">智能</span> <span class="sort-arrow"></span></th>
+              <th data-col="avgTime"><span data-i18n="th.avgTime">平均耗时</span> <span class="sort-arrow"></span></th>
+              <th data-col="avgTtft"><span data-i18n="th.avgTtft">首字延迟</span> <span class="sort-arrow"></span></th>
+              <th data-col="bestTime"><span data-i18n="th.bestTime">最佳耗时</span> <span class="sort-arrow"></span></th>
+              <th data-col="avgTps"><span data-i18n="th.avgTps">吞吐</span> <span class="sort-arrow"></span></th>
+              <th data-col="wins"><span data-i18n="th.wins">胜场</span> <span class="sort-arrow"></span></th>
+              <th data-col="trend"><span data-i18n="th.trend">趋势</span></th>
             </tr>
           </thead>
           <tbody id="lb-body"></tbody>
@@ -162,27 +163,27 @@
     <section data-tab="explorer">
       <div class="explorer-selectors mb-4">
         <div class="model-selector-wrap">
-          <div class="model-selector-label">Select Model</div>
+          <div class="model-selector-label" data-i18n="ex.select_model">选择模型</div>
           <div class="custom-select-container" id="explorer-custom-select">
             <button class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
-              <span class="trigger-content">Select a model...</span>
+              <span class="trigger-content">请选择模型…</span>
               <span class="trigger-arrow">▼</span>
             </button>
             <div class="custom-select-dropdown">
               <div class="dropdown-search-wrap">
-                <input type="text" class="dropdown-search-input" placeholder="🔍 Search models...">
+                <input type="text" class="dropdown-search-input" data-i18n-ph="ex.search_ph" placeholder="🔍 搜索模型…">
               </div>
               <ul class="dropdown-list" role="listbox"></ul>
             </div>
           </div>
         </div>
         <div class="filter-controls">
-          <span class="filter-label">Runs limit:</span>
+          <span class="filter-label" data-i18n="ov.runs_limit">运行次数：</span>
           <div class="filter-btns">
-            <button class="filter-btn" data-limit="30">30 runs</button>
-            <button class="filter-btn" data-limit="50">50 runs</button>
-            <button class="filter-btn" data-limit="100">100 runs</button>
-            <button class="filter-btn" data-limit="all">All</button>
+            <button class="filter-btn" data-limit="30" data-i18n="ov.limit.30">30 次</button>
+            <button class="filter-btn" data-limit="50" data-i18n="ov.limit.50">50 次</button>
+            <button class="filter-btn" data-limit="100" data-i18n="ov.limit.100">100 次</button>
+            <button class="filter-btn" data-limit="all" data-i18n="ov.limit.all">全部</button>
           </div>
         </div>
       </div>
@@ -192,41 +193,41 @@
       <!-- Model Capability & Benchmark Profile -->
       <div class="chart-row chart-row-2" style="margin-bottom:20px">
         <div class="card">
-          <div class="card-title"><span class="dot" style="background:var(--success)"></span>Model Capability Breakdown (Radar)</div>
+          <div class="card-title"><span class="dot" style="background:var(--success)"></span><span data-i18n="card.radar">模型能力拆解（雷达图）</span></div>
           <div style="position:relative;height:280px;display:flex;align-items:center;justify-content:center">
             <canvas id="chart-explorer-radar"></canvas>
-            <div id="explorer-no-radar" class="no-data" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-dim)">⚠️ Supply ARTIFICIAL_ANALYSIS_API_KEY to view radar capabilities</div>
+            <div id="explorer-no-radar" class="no-data" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-dim)" data-i18n="no_radar">⚠️ 请提供 ARTIFICIAL_ANALYSIS_API_KEY 以查看能力雷达图</div>
           </div>
         </div>
         <div class="card">
-          <div class="card-title"><span class="dot" style="background:var(--warning)"></span>Model Performance vs. Global Average</div>
-          <div class="chart-wrap" style="position:relative"><canvas id="chart-explorer-comparison"></canvas><div id="explorer-no-comparison" class="no-data" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-dim)">⚠️ Supply ARTIFICIAL_ANALYSIS_API_KEY to view comparison stats</div></div>
+          <div class="card-title"><span class="dot" style="background:var(--warning)"></span><span data-i18n="card.compare_profile">模型表现 vs. 全局平均</span></div>
+          <div class="chart-wrap" style="position:relative"><canvas id="chart-explorer-comparison"></canvas><div id="explorer-no-comparison" class="no-data" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-dim)" data-i18n="no_comparison">⚠️ 请提供 ARTIFICIAL_ANALYSIS_API_KEY 以查看对比数据</div></div>
         </div>
       </div>
 
       <div class="chart-row chart-row-2" style="margin-bottom:20px">
         <div class="card">
-          <div class="card-title"><span class="dot"></span>Response Time History</div>
+          <div class="card-title"><span class="dot"></span><span data-i18n="card.resp_history">响应时间历史</span></div>
           <div class="chart-wrap-lg"><canvas id="chart-explorer-time"></canvas></div>
         </div>
         <div class="card">
-          <div class="card-title"><span class="dot"></span>Error Breakdown</div>
+          <div class="card-title"><span class="dot"></span><span data-i18n="card.error_breakdown">错误分布</span></div>
           <div style="position:relative;height:260px;display:flex;align-items:center;justify-content:center">
             <canvas id="chart-explorer-errors"></canvas>
-            <div id="explorer-no-errors" class="no-data" style="display:none">🎉 100% Success Rate - No Errors!</div>
+            <div id="explorer-no-errors" class="no-data" style="display:none" data-i18n="no_errors">🎉 100% 成功率 - 无错误！</div>
           </div>
         </div>
       </div>
       <div class="chart-row chart-row-2">
         <div class="card">
-          <div class="card-title"><span class="dot"></span>Availability Heatmap</div>
+          <div class="card-title"><span class="dot"></span><span data-i18n="card.heatmap">可用性热力图</span></div>
           <div class="heatmap" id="explorer-heatmap"></div>
         </div>
         <div class="card">
-          <div class="card-title"><span class="dot"></span>Run History (last 20)</div>
+          <div class="card-title"><span class="dot"></span><span data-i18n="card.run_history">运行历史（最近 20 次）</span></div>
           <div class="run-table-wrap">
             <table class="run-table">
-              <thead><tr><th>Timestamp</th><th>Status</th><th>Response Time</th><th>Tok/s</th></tr></thead>
+              <thead><tr><th data-i18n="th.timestamp">时间</th><th data-i18n="th.status">状态</th><th data-i18n="th.response_time">响应时间</th><th data-i18n="th.tok_s">Tok/s</th></tr></thead>
               <tbody id="explorer-run-table"></tbody>
             </table>
           </div>
@@ -237,15 +238,15 @@
     <!-- TIMELINE -->
     <section data-tab="timeline">
       <div class="section-header mb-4">
-        <div><div class="section-title">Run Timeline</div></div>
+        <div><div class="section-title" data-i18n="tl.title">运行时间线</div></div>
       </div>
       <div class="timeline-controls">
         <div class="run-badge" id="timeline-badge"></div>
         <div class="filter-btns">
-          <button class="filter-btn active" data-filter="all">All</button>
-          <button class="filter-btn" data-filter="24h">Last 24h</button>
-          <button class="filter-btn" data-filter="48h">Last 48h</button>
-          <button class="filter-btn" data-filter="7d">Last 7d</button>
+          <button class="filter-btn active" data-filter="all" data-i18n="tl.filter.all">全部</button>
+          <button class="filter-btn" data-filter="24h" data-i18n="tl.filter.24h">最近 24 小时</button>
+          <button class="filter-btn" data-filter="48h" data-i18n="tl.filter.48h">最近 48 小时</button>
+          <button class="filter-btn" data-filter="7d" data-i18n="tl.filter.7d">最近 7 天</button>
         </div>
       </div>
       <div class="run-cards" id="run-cards"></div>
@@ -255,46 +256,46 @@
     <section data-tab="compare">
       <div class="section-header mb-4">
         <div>
-          <div class="section-title">Model Comparison</div>
-          <div class="section-sub">Head-to-head analysis</div>
+          <div class="section-title" data-i18n="cmp.title">模型对比</div>
+          <div class="section-sub" data-i18n="cmp.sub">一对一对比分析</div>
         </div>
         <div class="filter-controls">
-          <span class="filter-label">Runs limit:</span>
+          <span class="filter-label" data-i18n="ov.runs_limit">运行次数：</span>
           <div class="filter-btns">
-            <button class="filter-btn" data-limit="30">30 runs</button>
-            <button class="filter-btn" data-limit="50">50 runs</button>
-            <button class="filter-btn" data-limit="100">100 runs</button>
-            <button class="filter-btn" data-limit="all">All</button>
+            <button class="filter-btn" data-limit="30" data-i18n="ov.limit.30">30 次</button>
+            <button class="filter-btn" data-limit="50" data-i18n="ov.limit.50">50 次</button>
+            <button class="filter-btn" data-limit="100" data-i18n="ov.limit.100">100 次</button>
+            <button class="filter-btn" data-limit="all" data-i18n="ov.limit.all">全部</button>
           </div>
         </div>
       </div>
       <div class="compare-selectors">
         <div class="selector-group">
-          <label>Model A</label>
+          <label data-i18n="cmp.model_a">模型 A</label>
           <div class="custom-select-container" id="compare-a-custom-select">
             <button class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
-              <span class="trigger-content">Select model...</span>
+              <span class="trigger-content">请选择模型…</span>
               <span class="trigger-arrow">▼</span>
             </button>
             <div class="custom-select-dropdown">
               <div class="dropdown-search-wrap">
-                <input type="text" class="dropdown-search-input" placeholder="🔍 Search models...">
+                <input type="text" class="dropdown-search-input" data-i18n-ph="ex.search_ph" placeholder="🔍 搜索模型…">
               </div>
               <ul class="dropdown-list" role="listbox"></ul>
             </div>
           </div>
         </div>
-        <button class="swap-btn" id="swap-btn" title="Swap models">⇄</button>
+        <button class="swap-btn" id="swap-btn" title="交换模型" data-i18n-title="swap.title">⇄</button>
         <div class="selector-group">
-          <label>Model B</label>
+          <label data-i18n="cmp.model_b">模型 B</label>
           <div class="custom-select-container" id="compare-b-custom-select">
             <button class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
-              <span class="trigger-content">Select model...</span>
+              <span class="trigger-content">请选择模型…</span>
               <span class="trigger-arrow">▼</span>
             </button>
             <div class="custom-select-dropdown">
               <div class="dropdown-search-wrap">
-                <input type="text" class="dropdown-search-input" placeholder="🔍 Search models...">
+                <input type="text" class="dropdown-search-input" data-i18n-ph="ex.search_ph" placeholder="🔍 搜索模型…">
               </div>
               <ul class="dropdown-list" role="listbox"></ul>
             </div>
@@ -303,16 +304,16 @@
       </div>
       <div class="chart-row chart-row-2" style="margin-bottom:20px">
         <div class="card">
-          <div class="card-title"><span class="dot"></span>Head-to-Head Stats</div>
+          <div class="card-title"><span class="dot"></span><span data-i18n="card.h2h">一对一统计</span></div>
           <table class="h2h-table" id="h2h-table"></table>
         </div>
         <div class="card">
-          <div class="card-title"><span class="dot"></span>Response Time Overlay</div>
+          <div class="card-title"><span class="dot"></span><span data-i18n="card.resp_overlay">响应时间叠加</span></div>
           <div class="chart-wrap-lg"><canvas id="chart-compare-time"></canvas></div>
         </div>
       </div>
       <div class="card">
-        <div class="card-title"><span class="dot"></span>Win Timeline (per run)</div>
+        <div class="card-title"><span class="dot"></span><span data-i18n="card.win_timeline">胜负时间线（每次运行）</span></div>
         <div class="chart-wrap"><canvas id="chart-compare-wins"></canvas></div>
       </div>
     </section>
@@ -320,6 +321,7 @@
 </div>
 
 
+<script src="js/i18n.js"></script>
 <script src="js/helpers.js"></script>
 <script src="js/data.js"></script>
 <script src="js/charts.js"></script>

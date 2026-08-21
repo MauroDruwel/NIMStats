@@ -1,0 +1,21 @@
+name: i18n key symmetry check
+
+on:
+  push:
+    paths:
+      - 'js/i18n.js'
+      - 'scripts/check_i18n.js'
+      - '.github/workflows/i18n-check.yml'
+  pull_request:
+    paths:
+      - 'js/i18n.js'
+      - 'scripts/check_i18n.js'
+      - '.github/workflows/i18n-check.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify zh/en i18n keys are symmetric
+        run: node scripts/check_i18n.js

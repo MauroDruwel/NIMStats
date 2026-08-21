@@ -17,11 +17,11 @@ function renderOverview() {
   const mostReliable = [...modelNames].sort((a, b) => modelStats[b].uptime - modelStats[a].uptime)[0];
 
   const kpiData = [
-    { icon: '🔁', label: 'Total Runs', val: totalRuns, sub: `${runs[0]?.timestamp?.slice(0,10)} → ${runs[runs.length-1]?.timestamp?.slice(0,10)}`, decimals: 0 },
-    { icon: '✅', label: 'Avg Success Rate', val: avgSuccessRate, suffix: '%', decimals: 1, sub: 'across all runs & models' },
-    { icon: '⚡', label: 'Avg Best Response', val: bestTimeVal / 1000, suffix: 's', decimals: 2, sub: bestTimeModel ? shortModel(bestTimeModel) : '' },
-    { icon: '🚀', label: 'Avg Best Throughput', val: bestTpsVal, suffix: ' t/s', decimals: 1, sub: bestTpsModel ? shortModel(bestTpsModel) : '' },
-    { icon: '🏅', label: 'Most Reliable', val: (modelStats[mostReliable]?.uptime || 0) * 100, suffix: '%', decimals: 1, sub: mostReliable ? shortModel(mostReliable) : '' },
+    { icon: '🔁', label: t('kpi.total_runs'), val: totalRuns, sub: `${runs[0]?.timestamp?.slice(0,10)} → ${runs[runs.length-1]?.timestamp?.slice(0,10)}`, decimals: 0 },
+    { icon: '✅', label: t('kpi.avg_success'), val: avgSuccessRate, suffix: '%', decimals: 1, sub: t('kpi.sub_all') },
+    { icon: '⚡', label: t('kpi.avg_best_resp'), val: bestTimeVal / 1000, suffix: 's', decimals: 2, sub: bestTimeModel ? shortModel(bestTimeModel) : '' },
+    { icon: '🚀', label: t('kpi.avg_best_tps'), val: bestTpsVal, suffix: ' t/s', decimals: 1, sub: bestTpsModel ? shortModel(bestTpsModel) : '' },
+    { icon: '🏅', label: t('kpi.most_reliable'), val: (modelStats[mostReliable]?.uptime || 0) * 100, suffix: '%', decimals: 1, sub: mostReliable ? shortModel(mostReliable) : '' },
   ];
 
   const kpiGrid = document.getElementById('kpi-grid');
@@ -39,8 +39,10 @@ function renderOverview() {
     if (el) animateCounter(el, k.val, 1400, k.decimals || 0, k.suffix || '');
   });
 
+  const fromTs = runs[0]?.timestamp?.slice(0,10);
+  const toTs = runs[runs.length-1]?.timestamp?.slice(0,10);
   document.getElementById('overview-sub').textContent =
-    `${totalRuns} benchmark runs · ${modelNames.length} models · ${runs[0]?.timestamp?.slice(0,10)} to ${runs[runs.length-1]?.timestamp?.slice(0,10)}`;
+    t('ov.sub', { runs: totalRuns, models: modelNames.length, from: fromTs, to: toTs });
 
   // Charts
   const labels = runs.map(r => fmtTimestampShort(r.timestamp));
@@ -57,7 +59,7 @@ function renderOverview() {
     data: {
       labels,
       datasets: [{
-        label: 'Successes',
+        label: t('chart.success_count'),
         data: successCounts,
         borderColor: '#76b900',
         backgroundColor: 'rgba(118,185,0,0.08)',
@@ -71,7 +73,7 @@ function renderOverview() {
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-        title: (items) => `Run ${items[0].dataIndex + 1}: ${labels[items[0].dataIndex]}`
+        title: (items) => t('chart.run_tooltip', { n: items[0].dataIndex + 1, label: labels[items[0].dataIndex] })
       }}},
       scales: {
         x: { display: false },
@@ -86,7 +88,7 @@ function renderOverview() {
     data: {
       labels,
       datasets: [{
-        label: 'Success %',
+        label: t('chart.success_rate'),
         data: successRates,
         borderColor: '#00c8ff',
         backgroundColor: 'rgba(0,200,255,0.06)',
@@ -100,7 +102,7 @@ function renderOverview() {
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-        label: (item) => `${item.raw.toFixed(1)}% success`
+        label: (item) => t('chart.success_pct', { v: item.raw.toFixed(1) })
       }}},
       scales: {
         x: { display: false },
@@ -132,7 +134,7 @@ function renderOverview() {
       indexAxis: 'y',
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-        label: (item) => `Avg: ${item.raw.toFixed(2)}s`
+        label: (item) => t('chart.avg', { v: item.raw.toFixed(2) })
       }}},
       scales: {
         x: { grid: {}, ticks: { callback: v => v + 's' } },
@@ -164,7 +166,7 @@ function renderOverview() {
       indexAxis: 'y',
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-        label: (item) => `${item.raw.toFixed(1)} tok/s`
+        label: (item) => t('chart.tok_s', { v: item.raw.toFixed(1) })
       }}},
       scales: {
         x: { grid: {}, ticks: { callback: v => v + ' t/s' } },
@@ -221,7 +223,7 @@ function renderOverview() {
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-          label: (item) => `Intelligence: ${item.raw.toFixed(0)}`
+          label: (item) => t('chart.intel_val', { v: item.raw.toFixed(0) })
         }}},
         scales: {
           x: { grid: { display: false }, ticks: { font: { size: 9 }, autoSkip: false, maxRotation: 45, minRotation: 45 } },
@@ -261,18 +263,18 @@ function renderOverview() {
             callbacks: {
               label: (item) => {
                 const d = item.raw;
-                return `${shortModel(d.model)}: Speed = ${d.x.toFixed(1)} t/s, Intel = ${d.y.toFixed(0)}`;
+                return t('chart.scatter', { m: shortModel(d.model), sp: d.x.toFixed(1), int: d.y.toFixed(0) });
               }
             }
           }
         },
         scales: {
           x: {
-            title: { display: true, text: 'Throughput (tokens/sec)', color: '#9aa0a6', font: { size: 11 } },
+            title: { display: true, text: t('chart.axis_throughput'), color: '#9aa0a6', font: { size: 11 } },
             grid: {}
           },
           y: {
-            title: { display: true, text: 'Intelligence Index', color: '#9aa0a6', font: { size: 11 } },
+            title: { display: true, text: t('chart.axis_intel'), color: '#9aa0a6', font: { size: 11 } },
             grid: {}
           }
         }
@@ -331,10 +333,10 @@ function renderLbTable() {
     const colorVar = r.uptime >= 0.7 ? 'var(--success)' : r.uptime >= 0.4 ? 'var(--warning)' : 'var(--danger)';
     const scoreVar = r.score >= 60 ? 'var(--success)' : r.score >= 40 ? 'var(--warning)' : 'var(--danger)';
     const trendHtml = r.trend === 'up'
-      ? `<span class="trend-indicator trend-up" title="Improving">↑</span>`
+      ? `<span class="trend-indicator trend-up" title="${t('trend.up')}">↑</span>`
       : r.trend === 'down'
-      ? `<span class="trend-indicator trend-down" title="Declining">↓</span>`
-      : `<span class="trend-indicator trend-flat" title="Stable">→</span>`;
+      ? `<span class="trend-indicator trend-down" title="${t('trend.down')}">↓</span>`
+      : `<span class="trend-indicator trend-flat" title="${t('trend.flat')}">→</span>`;
     const last10 = r.responseTimes.slice(-10);
     const spark = sparklineSVG(last10, 72, 22, modelColor(r.model));
     const isTop3 = r.rank <= 3;
@@ -402,19 +404,19 @@ function renderExplorer() {
     ${providerChip(model)}
     <h2>${shortModel(model)}</h2>
     <span style="font-size:12px;color:var(--text-dim);margin-left:auto">
-      Last seen: ${s.lastSeen ? fmtTimestamp(s.lastSeen) : '—'}
+      ${t('ex.last_seen', { ts: s.lastSeen ? fmtTimestamp(s.lastSeen) : '—' })}
     </span>
   `;
 
   // Stats
   const uptimeColor = s.uptime >= 0.7 ? 'var(--success)' : s.uptime >= 0.4 ? 'var(--warning)' : 'var(--danger)';
   document.getElementById('explorer-stats').innerHTML = `
-    <div class="stat-card"><div class="stat-val" style="color:${uptimeColor}">${(s.uptime*100).toFixed(1)}%</div><div class="stat-label">Uptime</div><div class="stat-sub">${s.successCount}/${s.totalRuns} runs</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--purple)">${s.intelligence ? s.intelligence.toFixed(0) : '—'}</div><div class="stat-label">Intel Index</div><div class="stat-sub">Artificial Analysis</div></div>
-    <div class="stat-card"><div class="stat-val">${s.avgTime ? (s.avgTime/1000).toFixed(2)+'s' : '—'}</div><div class="stat-label">Avg Response</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--warning)">${s.avgTtft ? s.avgTtft.toFixed(0)+'ms' : '—'}</div><div class="stat-label">Avg TTFT</div><div class="stat-sub">Time to 1st Token</div></div>
-    <div class="stat-card"><div class="stat-val text-accent">${s.bestTime ? (s.bestTime/1000).toFixed(2)+'s' : '—'}</div><div class="stat-label">Best Response</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--blue)">${s.avgTps ? s.avgTps.toFixed(1)+' t/s' : '—'}</div><div class="stat-label">Avg Throughput</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:${uptimeColor}">${(s.uptime*100).toFixed(1)}%</div><div class="stat-label">${t('stat.uptime')}</div><div class="stat-sub">${t('stat.runs_sub', { s: s.successCount, t: s.totalRuns })}</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--purple)">${s.intelligence ? s.intelligence.toFixed(0) : '—'}</div><div class="stat-label">${t('stat.intel')}</div><div class="stat-sub">Artificial Analysis</div></div>
+    <div class="stat-card"><div class="stat-val">${s.avgTime ? (s.avgTime/1000).toFixed(2)+'s' : '—'}</div><div class="stat-label">${t('stat.avg_resp')}</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--warning)">${s.avgTtft ? s.avgTtft.toFixed(0)+'ms' : '—'}</div><div class="stat-label">${t('stat.avg_ttft')}</div><div class="stat-sub">${t('stat.ttft_sub')}</div></div>
+    <div class="stat-card"><div class="stat-val text-accent">${s.bestTime ? (s.bestTime/1000).toFixed(2)+'s' : '—'}</div><div class="stat-label">${t('stat.best_resp')}</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--blue)">${s.avgTps ? s.avgTps.toFixed(1)+' t/s' : '—'}</div><div class="stat-label">${t('stat.avg_tps')}</div></div>
   `;
 
   // Calculate Global Averages
@@ -445,7 +447,7 @@ function renderExplorer() {
     if (compCanvas) compCanvas.style.display = 'block';
 
     // 1. Radar Chart: Model Capability Breakdown
-    const radarLabels = ['Reliability (%)', 'Intelligence Index', 'Avg Response (s)', 'Avg Throughput (t/s)', 'Reasoning Index', 'Coding Index'];
+    const radarLabels = [t('radar.reliability'), t('radar.intelligence'), t('radar.avg_resp'), t('radar.avg_tps'), t('radar.reasoning'), t('radar.coding')];
     const modelRadarData = [
       s.uptime * 100,
       s.intelligence,
@@ -478,7 +480,7 @@ function renderExplorer() {
             borderWidth: 2
           },
           {
-            label: 'Global Average',
+            label: t('radar.global'),
             data: avgRadarData,
             backgroundColor: 'rgba(154, 160, 166, 0.15)',
             borderColor: '#9aa0a6',
@@ -498,7 +500,7 @@ function renderExplorer() {
               label: (item) => {
                 const label = item.chart.data.labels[item.dataIndex];
                 const val = item.raw;
-                return `${item.dataset.label} ${label}: ${val.toFixed(1)}`;
+                return t('radar.tooltip', { label: item.dataset.label, axis: label, v: val.toFixed(1) });
               }
             }
           }
@@ -520,7 +522,7 @@ function renderExplorer() {
     state.charts.explorerComparison = new Chart(compCanvas, {
       type: 'bar',
       data: {
-        labels: ['Reliability (%)', 'Intelligence Index', 'Avg Response (s)', 'Avg Throughput (t/s)'],
+        labels: [t('radar.reliability'), t('radar.intelligence'), t('radar.avg_resp'), t('radar.avg_tps')],
         datasets: [
           {
             label: shortModel(model),
@@ -536,7 +538,7 @@ function renderExplorer() {
             borderRadius: 4
           },
           {
-            label: 'Global Average',
+            label: t('radar.global'),
             data: [
               avgUptime,
               avgIntel,
@@ -560,15 +562,15 @@ function renderExplorer() {
               label: (item) => {
                 const dataset = item.dataset;
                 const val = item.raw;
-                
+
                 if (item.dataIndex === 0) {
-                  return `${dataset.label} Reliability: ${val.toFixed(1)}% Uptime`;
+                  return t('cmp.rel_tooltip', { label: dataset.label, v: val.toFixed(1) });
                 } else if (item.dataIndex === 1) {
-                  return `${dataset.label} Intelligence: ${val ? val.toFixed(0) : '—'} Index`;
+                  return t('cmp.intel_tooltip', { label: dataset.label, v: val ? val.toFixed(0) : '—' });
                 } else if (item.dataIndex === 2) {
-                  return `${dataset.label} Avg Response: ${val.toFixed(2)}s`;
+                  return t('cmp.resp_tooltip', { label: dataset.label, v: val.toFixed(2) });
                 } else if (item.dataIndex === 3) {
-                  return `${dataset.label} Avg Throughput: ${val.toFixed(1)} t/s`;
+                  return t('cmp.tps_tooltip', { label: dataset.label, v: val.toFixed(1) });
                 }
                 return `${dataset.label}: ${val}`;
               }
@@ -599,7 +601,7 @@ function renderExplorer() {
     data: {
       labels,
       datasets: [{
-        label: 'Response Time (s)',
+        label: t('chart.resp_seconds'),
         data: timeData,
         borderColor: modelColor(model),
         backgroundColor: modelColor(model) + '14',
@@ -614,7 +616,7 @@ function renderExplorer() {
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-        label: (item) => item.raw != null ? `${item.raw.toFixed(2)}s` : 'Failed'
+        label: (item) => item.raw != null ? `${item.raw.toFixed(2)}s` : t('chart.failed')
       }}},
       scales: {
         x: { display: false },
@@ -638,7 +640,7 @@ function renderExplorer() {
     state.charts.explorerErrors = new Chart(errorCanvas, {
       type: 'doughnut',
       data: {
-        labels: errorKeys,
+        labels: errorKeys.map(k => t(k)),
         datasets: [{
           data: errorKeys.map(k => s.errors[k]),
           backgroundColor: errorColors.slice(0, errorKeys.length).map(c => c + 'cc'),
@@ -665,10 +667,10 @@ function renderExplorer() {
   hm.innerHTML = reversed.map((r, i) => {
     const runIdx = activeResults.length - 1 - i;
     const globalRunIdx = firstActiveIdx >= 0 ? firstActiveIdx + runIdx : runIdx;
-    if (!r) return `<div class="heatmap-cell miss" title="Run ${globalRunIdx+1}: No data"></div>`;
+    if (!r) return `<div class="heatmap-cell miss" title="${t('hm.no_data', { n: globalRunIdx + 1 })}"></div>`;
     const ts = fmtTimestamp(activeRuns[runIdx]?.timestamp || '');
-    if (r.success) return `<div class="heatmap-cell pass" title="${ts}: ✓ ${(r.responseTime/1000).toFixed(2)}s"></div>`;
-    return `<div class="heatmap-cell fail" title="${ts}: ✗ ${r.error||'Error'}"></div>`;
+    if (r.success) return `<div class="heatmap-cell pass" title="${t('hm.ok', { ts, t: (r.responseTime/1000).toFixed(2) })}"></div>`;
+    return `<div class="heatmap-cell fail" title="${t('hm.fail', { ts, err: r.error || t('err.unknown') })}"></div>`;
   }).join('');
 
   // Run history table
@@ -679,7 +681,7 @@ function renderExplorer() {
     const tps = (r.success && r.responseTime > 0) ? (r.tokensGenerated / (r.responseTime / 1000)).toFixed(1) : null;
     return `<tr>
       <td class="mono" style="font-size:11px">${fmtTimestamp(activeRuns[i]?.timestamp||'')}</td>
-      <td><span class="status-badge ${r.success?'ok':'fail'}">${r.success?'✓ OK':'✗ Fail'}</span></td>
+      <td><span class="status-badge ${r.success?'ok':'fail'}">${r.success ? t('run.ok') : t('run.fail')}</span></td>
       <td class="mono">${r.success ? (r.responseTime/1000).toFixed(2)+'s' : '—'}</td>
       <td class="mono">${tps ? tps+' t/s' : '—'}</td>
     </tr>`;
@@ -704,7 +706,7 @@ function renderTimeline() {
     filtered = filtered.filter(r => new Date(r.timestamp) >= cutoff);
   }
 
-  document.getElementById('timeline-badge').textContent = `${filtered.length} runs`;
+  document.getElementById('timeline-badge').textContent = t('tl.badge', { n: filtered.length });
 
   const container = document.getElementById('run-cards');
   container.innerHTML = filtered.map((run, idx) => {
@@ -723,9 +725,9 @@ function renderTimeline() {
         <span class="run-expand-arrow">▼</span>
       </div>
       <div class="run-card-body">
-        <div class="run-prompt">Prompt: ${escHtml((run.prompt||'').slice(0,120))}${(run.prompt||'').length > 120 ? '…' : ''}</div>
+        <div class="run-prompt">${t('tl.prompt', { p: escHtml((run.prompt||'').slice(0,120)) + ((run.prompt||'').length > 120 ? '…' : '') })}</div>
         <table class="run-detail-table">
-          <thead><tr><th>Model</th><th>Status</th><th>Response Time</th><th>Tok/s</th><th>Error</th></tr></thead>
+          <thead><tr><th>${t('tl.th.model')}</th><th>${t('tl.th.status')}</th><th>${t('tl.th.resp')}</th><th>${t('tl.th.tok_s')}</th><th>${t('tl.th.error')}</th></tr></thead>
           <tbody>${run.models.map(m => {
             const tps = (m.success && m.responseTime > 0) ? (m.tokensGenerated / (m.responseTime / 1000)).toFixed(1) : null;
             const cls = m.success ? 'text-green' : 'text-red';
@@ -770,14 +772,14 @@ function renderCompare() {
   });
 
   const metrics = [
-    { label: 'Uptime', a: (sA.uptime*100).toFixed(1)+'%', b: (sB.uptime*100).toFixed(1)+'%', higherBetter: true, av: sA.uptime, bv: sB.uptime },
-    { label: 'Intelligence Index', a: sA.intelligence ? sA.intelligence.toFixed(0) : '—', b: sB.intelligence ? sB.intelligence.toFixed(0) : '—', higherBetter: true, av: sA.intelligence, bv: sB.intelligence },
-    { label: 'Avg Response Time', a: sA.avgTime ? (sA.avgTime/1000).toFixed(2)+'s' : '—', b: sB.avgTime ? (sB.avgTime/1000).toFixed(2)+'s' : '—', higherBetter: false, av: sA.avgTime, bv: sB.avgTime },
-    { label: 'Best Response Time', a: sA.bestTime ? (sA.bestTime/1000).toFixed(2)+'s' : '—', b: sB.bestTime ? (sB.bestTime/1000).toFixed(2)+'s' : '—', higherBetter: false, av: sA.bestTime, bv: sB.bestTime },
-    { label: 'Avg Throughput', a: sA.avgTps ? sA.avgTps.toFixed(1)+' t/s' : '—', b: sB.avgTps ? sB.avgTps.toFixed(1)+' t/s' : '—', higherBetter: true, av: sA.avgTps, bv: sB.avgTps },
-    { label: 'Total Wins', a: sA.wins, b: sB.wins, higherBetter: true, av: sA.wins, bv: sB.wins },
-    { label: 'Score', a: sA.score, b: sB.score, higherBetter: true, av: sA.score, bv: sB.score },
-    { label: 'H2H Win Rate', a: bothSucceeded ? (winsA/bothSucceeded*100).toFixed(1)+'%' : '—', b: bothSucceeded ? (winsB/bothSucceeded*100).toFixed(1)+'%' : '—', higherBetter: true, av: winsA, bv: winsB },
+    { label: t('m.uptime'), a: (sA.uptime*100).toFixed(1)+'%', b: (sB.uptime*100).toFixed(1)+'%', higherBetter: true, av: sA.uptime, bv: sB.uptime },
+    { label: t('m.intel'), a: sA.intelligence ? sA.intelligence.toFixed(0) : '—', b: sB.intelligence ? sB.intelligence.toFixed(0) : '—', higherBetter: true, av: sA.intelligence, bv: sB.intelligence },
+    { label: t('m.avg_resp'), a: sA.avgTime ? (sA.avgTime/1000).toFixed(2)+'s' : '—', b: sB.avgTime ? (sB.avgTime/1000).toFixed(2)+'s' : '—', higherBetter: false, av: sA.avgTime, bv: sB.avgTime },
+    { label: t('m.best_resp'), a: sA.bestTime ? (sA.bestTime/1000).toFixed(2)+'s' : '—', b: sB.bestTime ? (sB.bestTime/1000).toFixed(2)+'s' : '—', higherBetter: false, av: sA.bestTime, bv: sB.bestTime },
+    { label: t('m.avg_tps'), a: sA.avgTps ? sA.avgTps.toFixed(1)+' t/s' : '—', b: sB.avgTps ? sB.avgTps.toFixed(1)+' t/s' : '—', higherBetter: true, av: sA.avgTps, bv: sB.avgTps },
+    { label: t('m.wins'), a: sA.wins, b: sB.wins, higherBetter: true, av: sA.wins, bv: sB.wins },
+    { label: t('m.score'), a: sA.score, b: sB.score, higherBetter: true, av: sA.score, bv: sB.score },
+    { label: t('m.h2h'), a: bothSucceeded ? (winsA/bothSucceeded*100).toFixed(1)+'%' : '—', b: bothSucceeded ? (winsB/bothSucceeded*100).toFixed(1)+'%' : '—', higherBetter: true, av: winsA, bv: winsB },
   ];
 
   const colorA = modelColor(modelA);
@@ -786,7 +788,7 @@ function renderCompare() {
   document.getElementById('h2h-table').innerHTML = `
     <thead><tr>
       <td class="h2h-val-a" style="color:${colorA};font-size:13px;padding:10px 16px;text-align:center">${providerChip(modelA, true)} ${shortModel(modelA)}</td>
-      <td class="h2h-metric">Metric</td>
+      <td class="h2h-metric">${t('h2h.metric')}</td>
       <td class="h2h-val-b" style="color:${colorB};font-size:13px;padding:10px 16px;text-align:center">${providerChip(modelB, true)} ${shortModel(modelB)}</td>
     </tr></thead>
     <tbody>${metrics.map(m => {
@@ -844,7 +846,7 @@ function renderCompare() {
       plugins: {
         legend: { labels: { boxWidth: 12, font: { size: 11 } } },
         tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
-          label: (item) => item.raw != null ? `${item.dataset.label}: ${item.raw.toFixed(2)}s` : `${item.dataset.label}: Failed`
+          label: (item) => item.raw != null ? `${item.dataset.label}: ${item.raw.toFixed(2)}s` : t('cmp.overlay_fail', { label: item.dataset.label })
         }}
       },
       scales: {
@@ -872,7 +874,7 @@ function renderCompare() {
     data: {
       labels,
       datasets: [{
-        label: 'Winner per run',
+        label: t('cmp.win_per_run'),
         data: winData,
         backgroundColor: winData.map(v => v == null ? neutralColor : v > 0 ? colorA + 'cc' : colorB + 'cc'),
         borderColor: winData.map(v => v == null ? neutralColor : v > 0 ? colorA : colorB),
@@ -886,8 +888,8 @@ function renderCompare() {
         legend: { display: false },
         tooltip: { ...CHART_DEFAULTS.tooltip, callbacks: {
           label: (item) => {
-            if (item.raw == null) return 'Both failed';
-            return item.raw > 0 ? `${shortModel(modelA)} won` : `${shortModel(modelB)} won`;
+            if (item.raw == null) return t('cmp.both_failed');
+            return item.raw > 0 ? t('cmp.won', { m: shortModel(modelA) }) : t('cmp.won', { m: shortModel(modelB) });
           }
         }}
       },
