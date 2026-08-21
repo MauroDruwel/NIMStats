@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-// Verifies that the zh and en dictionaries in js/i18n.js have identical key
-// sets, so translations can never silently drift apart.
+// Verifies that every language dictionary in js/i18n.js has the same key set
+// as English, so translations can never silently drift apart.
 
 const fs = require('fs');
 const path = require('path');
@@ -20,31 +20,33 @@ new Function('window', 'localStorage', 'document', code)(
 );
 
 const I18N = sandboxWindow.I18N;
-if (!I18N || !I18N.zh || !I18N.en) {
-  console.error('i18n.js did not expose window.I18N with zh and en dictionaries');
+if (!I18N || !I18N.en) {
+  console.error('i18n.js did not expose window.I18N with an en dictionary');
   process.exit(1);
 }
 
-const zh = Object.keys(I18N.zh).sort();
-const en = Object.keys(I18N.en).sort();
-
-const missingInEn = zh.filter((k) => !(k in I18N.en));
-const missingInZh = en.filter((k) => !(k in I18N.zh));
+const langs = Object.keys(I18N);
+const reference = Object.keys(I18N.en).sort();
+console.log(`Reference (en) keys: ${reference.length}`);
+console.log(`Languages found: ${langs.join(', ')}`);
 
 let ok = true;
-if (missingInEn.length) {
-  ok = false;
-  console.error(
-    `Keys present in zh but missing in en (${missingInEn.length}):\n  ` +
-      missingInEn.join('\n  ')
-  );
-}
-if (missingInZh.length) {
-  ok = false;
-  console.error(
-    `Keys present in en but missing in zh (${missingInZh.length}):\n  ` +
-      missingInZh.join('\n  ')
-  );
+for (const lang of langs) {
+  const keys = Object.keys(I18N[lang]).sort();
+  if (keys.length !== reference.length) {
+    ok = false;
+    console.error(`\n[${lang}] key count mismatch: ${keys.length} vs ${reference.length}`);
+  }
+  const missing = reference.filter((k) => !(k in I18N[lang]));
+  const extra = keys.filter((k) => !(k in I18N.en));
+  if (missing.length) {
+    ok = false;
+    console.error(`[${lang}] missing keys (${missing.length}):\n  ` + missing.join('\n  '));
+  }
+  if (extra.length) {
+    ok = false;
+    console.error(`[${lang}] extra keys (${extra.length}):\n  ` + extra.join('\n  '));
+  }
 }
 
 if (!ok) {
@@ -52,4 +54,4 @@ if (!ok) {
   process.exit(1);
 }
 
-console.log(`i18n OK: zh and en dictionaries each have ${zh.length} symmetric keys.`);
+console.log(`\ni18n OK: ${langs.length} languages each have ${reference.length} symmetric keys.`);
