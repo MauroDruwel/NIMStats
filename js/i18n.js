@@ -1501,3 +1501,13 @@ window.setLang = function (lang) {
 window.toggleLang = function () {
   window.setLang(window.I18N_LANG === 'zh' ? 'en' : 'zh');
 };
+
+// Apply the selected language to static markup as early as possible, so the
+// loading screen and nav render in the correct language before data loads.
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window.applyLang);
+  } else {
+    window.applyLang();
+  }
+}
