@@ -95,12 +95,14 @@ function providerChip(m, small) {
 
 function fmtTimestamp(ts) {
   const d = new Date(ts);
-  return d.toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+  const loc = window.getUiLocale ? window.getUiLocale() : 'en-US';
+  return d.toLocaleString(loc, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 function fmtTimestampShort(ts) {
   const d = new Date(ts);
-  const mo = d.toLocaleString('en', { month: 'short' });
+  const loc = window.getUiLocale ? window.getUiLocale() : 'en-US';
+  const mo = d.toLocaleString(loc, { month: 'short' });
   const day = d.getDate();
   const hh = String(d.getHours()).padStart(2, '0');
   const mm = String(d.getMinutes()).padStart(2, '0');
@@ -108,13 +110,13 @@ function fmtTimestampShort(ts) {
 }
 
 function categorizeError(err) {
-  if (!err) return 'Unknown';
-  if (err.includes('timed out')) return 'Timeout';
-  if (err.includes('JSON')) return 'JSON Error';
-  if (err.includes('404')) return 'Not Found (404)';
-  if (err.includes('410')) return 'Gone (410)';
-  if (err.includes('closed connection')) return 'Connection Closed';
-  return 'Other Error';
+  if (!err) return 'err.unknown';
+  if (err.includes('timed out')) return 'err.timeout';
+  if (err.includes('JSON')) return 'err.json';
+  if (err.includes('404')) return 'err.404';
+  if (err.includes('410')) return 'err.410';
+  if (err.includes('closed connection')) return 'err.closed';
+  return 'err.other';
 }
 
 function modelColor(model) {
