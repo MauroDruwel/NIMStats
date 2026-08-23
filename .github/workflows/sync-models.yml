@@ -1,4 +1,4 @@
-name: Sync NVIDIA model list
+Name: Sync NVIDIA model list
 
 on:
   schedule:
@@ -21,13 +21,25 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Get default AI model
+        id: model
+        run: |
+          MODEL=$(curl -sf https://maurodruwel.be/ai/default)
+          
+          if [ -z "$MODEL" ]; then
+            echo "Model endpoint returned an empty response"
+            exit 1
+          fi
+
+          echo "model=$MODEL" >> "$GITHUB_OUTPUT"
+
       - name: Run OpenCode sync agent
         uses: anomalyco/opencode/github@latest
         env:
           ARTIFICIAL_ANALYSIS_API_KEY: ${{ secrets.ARTIFICIAL_ANALYSIS_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          model: opencode/deepseek-v4-flash-free
+          model: ${{ steps.model.outputs.model }}
           use_github_token: true
           share: false
           prompt: |
