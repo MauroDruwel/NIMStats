@@ -1,4 +1,4 @@
-Name: Sync NVIDIA model list
+name: Sync NVIDIA model list
 
 on:
   schedule:
