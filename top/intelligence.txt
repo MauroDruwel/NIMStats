@@ -1,1 +1,1 @@
-minimaxai/minimax-m3
+openai/gpt-oss-20b
