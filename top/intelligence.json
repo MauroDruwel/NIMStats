@@ -3,14 +3,14 @@
   "provider": "minimaxai",
   "score": 60,
   "intelligence": 45.4,
-  "uptime": 95.6,
-  "avg_response_time_ms": 55437.28488372093,
+  "uptime": 95.7,
+  "avg_response_time_ms": 55400.029027576194,
   "best_response_time_ms": 2324,
-  "avg_time_to_first_token_ms": 10648.1,
+  "avg_time_to_first_token_ms": 10637.5,
   "avg_throughput_tps": 26.8,
   "total_runs": 720,
-  "success_count": 688,
+  "success_count": 689,
   "wins": 22,
-  "last_seen": "2026-09-02T04:00:09Z",
-  "generated_at": "2026-09-02T04:07:15Z"
+  "last_seen": "2026-09-02T05:00:09Z",
+  "generated_at": "2026-09-02T05:06:58Z"
 }
