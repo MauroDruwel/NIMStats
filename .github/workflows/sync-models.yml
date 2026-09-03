@@ -57,16 +57,16 @@ jobs:
                - RENAME models NVIDIA republished under a new id, using the RENAMES mapping in sync_models.py.
                - ADD new chat models worth benchmarking. Use your judgment on what people will actually use: NVIDIA hosts the newest flagship releases, so prefer those. The Artificial Analysis intelligence index is guidance, not a hard cutoff — a rough bar of ~40, but you may include notably newer or widely-used models below that (e.g. a brand-new flagship release at 38 is a better add than a 3-year-old model at 60). Exclude non-chat models (embeddings, rerankers, vision/audio-only, guard/safety, image-gen, etc.) and exclude niche or domain-specialized models unless they are clearly popular. Cap new additions at 8 per run. If no benchmark data is available, do not add models.
 
-            5. Apply the changes: edit the ALL_MODELS list in scripts/test_models.py (you can reuse the logic in sync_models.py / manage_models.py rather than hand-editing), then run:
-               python3 scripts/manage_models.py purge
-               python3 scripts/generate_best.py
+            5. Apply the changes: edit the ALL_MODELS list in scripts/test_models.py (you can reuse the logic in sync_models.py / manage_models.py rather than hand-editing).
+               CRITICAL: Do NOT run `manage_models.py purge` and do NOT run `generate_best.py`. Do NOT touch or commit `history.db` or files under `top/`. The PR must ONLY modify `scripts/test_models.py`. The database purge and top endpoint regeneration are handled automatically by the hourly benchmark workflow on main after merge.
 
-            6. Validate: `python3 -m py_compile scripts/test_models.py scripts/sync_models.py` and confirm the groups in test_models.py are still balanced (they derive from the list size).
+            6. Validate: `python3 -m py_compile scripts/test_models.py scripts/sync_models.py` and confirm the groups in test_models.py are still balanced (they derive from the list size). If `history.db` or `top/` were touched or created, discard them (e.g. `git checkout -- history.db top/ 2>/dev/null || true`).
 
             7. If the model list is unchanged, print "No model list changes" and stop — do NOT create a PR.
 
             8. Otherwise open or update the PR:
                - Branch: chore/sync-model-list (never push to main)
+               - IMPORTANT: Stage and commit ONLY `scripts/test_models.py` (`git add scripts/test_models.py`). Ensure no other files (e.g. history.db, top/*) are committed, guaranteeing zero merge conflicts with hourly benchmark runs on main.
                - Title: "chore: sync NVIDIA model list"
                - Body: a markdown report with the date, the removed models, the renamed models, and the added models with their Artificial Analysis intelligence index (and a note if benchmark data was unavailable).
                - Use the gh CLI (authenticated via GITHUB_TOKEN). First run `gh pr list --head chore/sync-model-list --json number -q '.[0].number'`; if a PR exists, update it with `gh pr edit`, otherwise create it with `gh pr create --base main --head chore/sync-model-list`.
