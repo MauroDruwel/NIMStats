@@ -28,7 +28,6 @@ ALL_MODELS = [
     "nvidia/nemotron-3-super-120b-a12b",
     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
     "moonshotai/kimi-k2.6",
-    "openai/gpt-oss-120b",
     "google/gemma-4-31b-it",
     "meta/llama-3.2-90b-vision-instruct",
     "nvidia/nemotron-3-ultra-550b-a55b",
