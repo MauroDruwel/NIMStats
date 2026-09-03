@@ -68,6 +68,7 @@ jobs:
           mv scripts/results-group1/results.json scripts/results-group1.json || true
           mv scripts/results-group2/results.json scripts/results-group2.json || true
           python3 scripts/merge_results.py
+          python3 scripts/manage_models.py purge || true
       
       - name: Fetch and update Artificial Analysis intelligence scores
         env:
