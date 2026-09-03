@@ -24,21 +24,17 @@ OUTPUT_FILE = SCRIPT_DIR / "results.json"
 
 ALL_MODELS = [
     "deepseek-ai/deepseek-v4-flash-0731",
-    "z-ai/glm-5.2",
     "minimaxai/minimax-m3",
     "nvidia/nemotron-3-super-120b-a12b",
     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
     "moonshotai/kimi-k2.6",
-    "openai/gpt-oss-120b",
     "google/gemma-4-31b-it",
-    "meta/llama-3.3-70b-instruct",
     "meta/llama-3.2-90b-vision-instruct",
-    "stepfun-ai/step-3.7-flash",
-    "thinkingmachines/inkling",
     "nvidia/nemotron-3-ultra-550b-a55b",
     "nvidia/nemotron-3.5-lightning-30b-a3b",
     "openai/gpt-oss-20b",
+    "moonshotai/kimi-k3",
+    "deepseek-ai/deepseek-v4-pro-0813",
 ]
 
 GROUP1_MODELS = ALL_MODELS[: len(ALL_MODELS) // 2 + len(ALL_MODELS) % 2]
