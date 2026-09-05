@@ -1,16 +1,16 @@
 {
   "best_model": "deepseek-ai/deepseek-v4-pro-0813",
   "provider": "deepseek-ai",
-  "score": 57,
+  "score": 58,
   "intelligence": 42.1,
-  "uptime": 93.3,
-  "avg_response_time_ms": 75864.76190476191,
+  "uptime": 93.5,
+  "avg_response_time_ms": 80647.93023255814,
   "best_response_time_ms": 14577,
-  "avg_time_to_first_token_ms": 45427.6,
-  "avg_throughput_tps": 10.8,
-  "total_runs": 45,
-  "success_count": 42,
+  "avg_time_to_first_token_ms": 49766.6,
+  "avg_throughput_tps": 10.6,
+  "total_runs": 46,
+  "success_count": 43,
   "wins": 0,
-  "last_seen": "2026-09-05T17:00:09Z",
-  "generated_at": "2026-09-05T17:10:51Z"
+  "last_seen": "2026-09-05T18:00:08Z",
+  "generated_at": "2026-09-05T18:11:06Z"
 }
