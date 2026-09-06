@@ -1,1 +1,1 @@
-minimaxai/minimax-m3
+deepseek-ai/deepseek-v4-pro-0813
