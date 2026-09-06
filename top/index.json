@@ -3,14 +3,14 @@
   "provider": "openai",
   "score": 72,
   "intelligence": 9.1,
-  "uptime": 98.9,
-  "avg_response_time_ms": 11821.418259023354,
+  "uptime": 99.0,
+  "avg_response_time_ms": 11828.377118644068,
   "best_response_time_ms": 2932,
-  "avg_time_to_first_token_ms": 4412.0,
-  "avg_throughput_tps": 68.9,
-  "total_runs": 476,
-  "success_count": 471,
+  "avg_time_to_first_token_ms": 4413.8,
+  "avg_throughput_tps": 68.8,
+  "total_runs": 477,
+  "success_count": 472,
   "wins": 104,
-  "last_seen": "2026-09-06T15:00:08Z",
-  "generated_at": "2026-09-06T15:08:58Z"
+  "last_seen": "2026-09-06T16:00:08Z",
+  "generated_at": "2026-09-06T16:12:47Z"
 }
