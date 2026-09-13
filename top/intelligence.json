@@ -3,14 +3,14 @@
   "provider": "deepseek-ai",
   "score": 52,
   "intelligence": 36.3,
-  "uptime": 88.1,
-  "avg_response_time_ms": 83697.275,
+  "uptime": 88.2,
+  "avg_response_time_ms": 84659.93532338309,
   "best_response_time_ms": 5967,
-  "avg_time_to_first_token_ms": 38881.5,
+  "avg_time_to_first_token_ms": 39993.9,
   "avg_throughput_tps": 13.6,
-  "total_runs": 227,
-  "success_count": 200,
+  "total_runs": 228,
+  "success_count": 201,
   "wins": 1,
-  "last_seen": "2026-09-13T08:00:09Z",
-  "generated_at": "2026-09-13T08:15:47Z"
+  "last_seen": "2026-09-13T10:00:07Z",
+  "generated_at": "2026-09-13T10:09:52Z"
 }
