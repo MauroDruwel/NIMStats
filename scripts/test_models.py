@@ -34,6 +34,7 @@ ALL_MODELS = [
     "openai/gpt-oss-20b",
     "moonshotai/kimi-k3",
     "z-ai/glm-5.3-flash",
+    "z-ai/glm-5.3",
 ]
 
 GROUP1_MODELS = ALL_MODELS[: len(ALL_MODELS) // 2 + len(ALL_MODELS) % 2]
