@@ -1,16 +1,16 @@
 {
-  "best_model": "nvidia/nemotron-3-super-120b-a12b",
+  "best_model": "nvidia/nemotron-3.5-lightning-30b-a3b",
   "provider": "nvidia",
-  "score": 69,
+  "score": 60,
   "intelligence": 13.6,
-  "uptime": 84.6,
-  "avg_response_time_ms": 9475.228243021347,
-  "best_response_time_ms": 1699,
-  "avg_time_to_first_token_ms": 3034.8,
-  "avg_throughput_tps": 77.0,
+  "uptime": 94.6,
+  "avg_response_time_ms": 34969.14684287812,
+  "best_response_time_ms": 1776,
+  "avg_time_to_first_token_ms": 34849.5,
+  "avg_throughput_tps": 45.6,
   "total_runs": 720,
-  "success_count": 609,
-  "wins": 248,
-  "last_seen": "2026-09-17T17:00:10Z",
-  "generated_at": "2026-09-17T17:08:57Z"
+  "success_count": 681,
+  "wins": 98,
+  "last_seen": "2026-09-17T18:00:08Z",
+  "generated_at": "2026-09-17T18:13:50Z"
 }
