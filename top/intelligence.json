@@ -1,16 +1,16 @@
 {
   "best_model": "mistralai/mistral-nemotron",
   "provider": "mistralai",
-  "score": 55,
+  "score": 56,
   "intelligence": null,
-  "uptime": 66.7,
-  "avg_response_time_ms": 40605.25,
-  "best_response_time_ms": 20515,
-  "avg_time_to_first_token_ms": 24716.8,
-  "avg_throughput_tps": 11.6,
-  "total_runs": 6,
-  "success_count": 4,
+  "uptime": 71.4,
+  "avg_response_time_ms": 34970.2,
+  "best_response_time_ms": 12430,
+  "avg_time_to_first_token_ms": 19832.6,
+  "avg_throughput_tps": 15.8,
+  "total_runs": 7,
+  "success_count": 5,
   "wins": 0,
-  "last_seen": "2026-09-19T21:00:11Z",
-  "generated_at": "2026-09-19T21:11:30Z"
+  "last_seen": "2026-09-19T22:00:07Z",
+  "generated_at": "2026-09-19T22:08:00Z"
 }
