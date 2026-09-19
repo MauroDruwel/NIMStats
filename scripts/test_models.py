@@ -35,6 +35,9 @@ ALL_MODELS = [
     "moonshotai/kimi-k3",
     "z-ai/glm-5.3-flash",
     "z-ai/glm-5.3",
+    "nvidia/nemotron-nano-3-30b-a3b",
+    "mistralai/mistral-nemotron",
+    "mistralai/mistral-large",
 ]
 
 GROUP1_MODELS = ALL_MODELS[: len(ALL_MODELS) // 2 + len(ALL_MODELS) % 2]
