@@ -1,1 +1,1 @@
-deepseek-ai/deepseek-v4.1-flash
+openai/gpt-oss-20b
