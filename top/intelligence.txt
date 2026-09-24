@@ -1,1 +1,1 @@
-nvidia/nemotron-3.5-lightning-30b-a3b
+mistralai/mistral-nemotron
