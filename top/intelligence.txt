@@ -1,1 +1,1 @@
-mistralai/mistral-nemotron
+deepseek-ai/deepseek-v4.1-flash
