@@ -40,6 +40,8 @@ ALL_MODELS = [
     "deepseek-ai/deepseek-v4.1-flash",
 ]
 
+GLM_THINKING_MODELS = {"z-ai/glm-5.3-flash", "z-ai/glm-5.3"}
+
 GROUP1_MODELS = ALL_MODELS[: len(ALL_MODELS) // 2 + len(ALL_MODELS) % 2]
 
 GROUP2_MODELS = ALL_MODELS[len(ALL_MODELS) // 2 + len(ALL_MODELS) % 2 :]
@@ -83,6 +85,10 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
         "stream": True,
         "stream_options": {"include_usage": True},
     }
+    if model in GLM_THINKING_MODELS:
+        # GLM-5.3 thinking is always enabled; cap effort so this short benchmark
+        # can reach a final answer instead of spending the whole output budget reasoning.
+        payload.update({"max_tokens": 2048, "reasoning_effort": "low"})
     body = json.dumps(payload).encode("utf-8")
 
     request = urllib.request.Request(
@@ -98,6 +104,8 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
     started = time.perf_counter()
     status_code = 0
     error_body = ""
+    reasoning_chars = 0
+    finish_reason: str | None = None
 
     try:
         with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
@@ -110,9 +118,9 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
 
             for raw_line in response:
                 line = raw_line.decode("utf-8", errors="replace").strip()
-                if not line or not line.startswith("data: "):
+                if not line or not line.startswith("data:"):
                     continue
-                data_str = line[len("data: "):]
+                data_str = line[len("data:"):].strip()
                 if data_str == "[DONE]":
                     break
                 try:
@@ -123,8 +131,13 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
                 # Extract content from delta
                 choices = chunk.get("choices")
                 if isinstance(choices, list) and choices:
-                    delta = choices[0].get("delta") or {}
+                    choice = choices[0]
+                    delta = choice.get("delta") or {}
                     text = delta.get("content") or ""
+                    reasoning = delta.get("reasoning_content") or delta.get("reasoning") or ""
+                    if isinstance(reasoning, str):
+                        reasoning_chars += len(reasoning)
+                    finish_reason = choice.get("finish_reason") or finish_reason
                     if text:
                         if time_to_first_token_ms is None:
                             time_to_first_token_ms = int((time.perf_counter() - started) * 1000)
@@ -177,6 +190,13 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
         return failure_result(model, error_message)
 
     if not content.strip():
+        details = []
+        if reasoning_chars:
+            details.append(f"reasoning_chars={reasoning_chars}")
+        if finish_reason:
+            details.append(f"finish_reason={finish_reason}")
+        if details:
+            return failure_result(model, f"No final content in response ({', '.join(details)})")
         return failure_result(model, "No content in response")
 
     return {
