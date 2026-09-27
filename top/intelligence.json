@@ -3,14 +3,14 @@
   "provider": "mistralai",
   "score": 50,
   "intelligence": null,
-  "uptime": 50.8,
-  "avg_response_time_ms": 103094.65625,
+  "uptime": 51.1,
+  "avg_response_time_ms": 105082.03092783505,
   "best_response_time_ms": 1430,
-  "avg_time_to_first_token_ms": 57316.3,
+  "avg_time_to_first_token_ms": 57068.5,
   "avg_throughput_tps": 17.3,
-  "total_runs": 189,
-  "success_count": 96,
+  "total_runs": 190,
+  "success_count": 97,
   "wins": 4,
-  "last_seen": "2026-09-27T13:00:08Z",
-  "generated_at": "2026-09-27T13:10:29Z"
+  "last_seen": "2026-09-27T14:00:08Z",
+  "generated_at": "2026-09-27T14:14:02Z"
 }
