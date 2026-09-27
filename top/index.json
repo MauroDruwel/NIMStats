@@ -1,16 +1,16 @@
 {
-  "best_model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "best_model": "nvidia/nemotron-3-super-120b-a12b",
   "provider": "nvidia",
-  "score": 57,
-  "intelligence": 22.9,
-  "uptime": 79.4,
-  "avg_response_time_ms": 31087.636363636364,
-  "best_response_time_ms": 2768,
-  "avg_time_to_first_token_ms": 19561.6,
-  "avg_throughput_tps": 37.5,
+  "score": 67,
+  "intelligence": 12.8,
+  "uptime": 76.9,
+  "avg_response_time_ms": 8755.848375451264,
+  "best_response_time_ms": 2312,
+  "avg_time_to_first_token_ms": 2109.0,
+  "avg_throughput_tps": 74.8,
   "total_runs": 720,
-  "success_count": 572,
-  "wins": 94,
-  "last_seen": "2026-09-27T19:00:08Z",
-  "generated_at": "2026-09-27T19:13:21Z"
+  "success_count": 554,
+  "wins": 312,
+  "last_seen": "2026-09-27T20:00:10Z",
+  "generated_at": "2026-09-27T20:16:03Z"
 }
