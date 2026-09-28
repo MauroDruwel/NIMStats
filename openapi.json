@@ -1,0 +1,234 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "NIMStats API",
+    "version": "1.0.0",
+    "description": "Real-time API endpoints for NVIDIA NIM benchmarks, rankings, response times, and model metrics hosted on https://nimstats.maurodruwel.be.",
+    "contact": {
+      "name": "Mauro Druwel",
+      "url": "https://github.com/MauroDruwel/NIMStats"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/MauroDruwel/NIMStats/blob/main/LICENSE"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://nimstats.maurodruwel.be",
+      "description": "Production Cloudflare Pages Deployment"
+    }
+  ],
+  "paths": {
+    "/top": {
+      "get": {
+        "summary": "Get the top overall model (balanced score)",
+        "operationId": "getTopModel",
+        "description": "Returns the top-ranked model using the balanced composite score: reliability (30%) + intelligence (30%) + speed (20%) + throughput (20%).",
+        "responses": {
+          "200": {
+            "description": "Top overall model details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/top/model": {
+      "get": {
+        "summary": "Get top model name (plain text)",
+        "operationId": "getTopModelName",
+        "description": "Returns just the model name string of the top balanced model.",
+        "responses": {
+          "200": {
+            "description": "Model identifier string",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "nvidia/nemotron-3-ultra-550b-a55b"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/top/speed": {
+      "get": {
+        "summary": "Get the fastest model",
+        "operationId": "getFastestModel",
+        "description": "Returns the top model by speed score: speed (50%) + throughput (50%).",
+        "responses": {
+          "200": {
+            "description": "Fastest model details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/top/speed/model": {
+      "get": {
+        "summary": "Get fastest model name (plain text)",
+        "operationId": "getFastestModelName",
+        "description": "Returns just the model name string of the fastest model.",
+        "responses": {
+          "200": {
+            "description": "Model identifier string",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/top/intelligence": {
+      "get": {
+        "summary": "Get the most intelligent model",
+        "operationId": "getMostIntelligentModel",
+        "description": "Returns the top model by intelligence score: intelligence (70%) + reliability (30%).",
+        "responses": {
+          "200": {
+            "description": "Most intelligent model details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/top/intelligence/model": {
+      "get": {
+        "summary": "Get most intelligent model name (plain text)",
+        "operationId": "getMostIntelligentModelName",
+        "description": "Returns just the model name string of the most intelligent model.",
+        "responses": {
+          "200": {
+            "description": "Model identifier string",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "deepseek-ai/deepseek-v4.1-flash"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TopModel": {
+        "type": "object",
+        "required": [
+          "best_model",
+          "provider",
+          "score",
+          "uptime",
+          "avg_response_time_ms",
+          "total_runs",
+          "success_count",
+          "generated_at"
+        ],
+        "properties": {
+          "best_model": {
+            "type": "string",
+            "description": "Full model identifier",
+            "example": "nvidia/nemotron-3-ultra-550b-a55b"
+          },
+          "provider": {
+            "type": "string",
+            "description": "Model vendor/creator",
+            "example": "nvidia"
+          },
+          "score": {
+            "type": "number",
+            "description": "Normalized ranking score (0-100)",
+            "example": 58
+          },
+          "intelligence": {
+            "type": "number",
+            "nullable": true,
+            "description": "Artificial Analysis intelligence score",
+            "example": 22.9
+          },
+          "uptime": {
+            "type": "number",
+            "description": "Success rate percentage over the trailing evaluation window",
+            "example": 80.0
+          },
+          "avg_response_time_ms": {
+            "type": "number",
+            "description": "Average response latency in milliseconds",
+            "example": 30614.5
+          },
+          "best_response_time_ms": {
+            "type": "number",
+            "description": "Fastest observed response latency in milliseconds",
+            "example": 2768
+          },
+          "avg_time_to_first_token_ms": {
+            "type": "number",
+            "nullable": true,
+            "description": "Average Time to First Token (TTFT) in milliseconds",
+            "example": 19035.9
+          },
+          "avg_throughput_tps": {
+            "type": "number",
+            "description": "Average tokens per second throughput",
+            "example": 37.6
+          },
+          "total_runs": {
+            "type": "integer",
+            "description": "Total number of benchmark runs evaluated",
+            "example": 720
+          },
+          "success_count": {
+            "type": "integer",
+            "description": "Number of successful benchmark calls",
+            "example": 576
+          },
+          "wins": {
+            "type": "integer",
+            "description": "Number of benchmark runs where this model was the fastest",
+            "example": 100
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of most recent successful benchmark run",
+            "example": "2026-09-28T19:00:09Z"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the rankings were calculated",
+            "example": "2026-09-28T19:13:09Z"
+          }
+        }
+      }
+    }
+  }
+}
