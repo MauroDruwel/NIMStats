@@ -294,7 +294,7 @@ CREATE TABLE model_results (
 );
 ```
 
-**Benchmark parameters:** `temperature: 0.7` · `top_p: 0.9` · `max_tokens: 500` · OpenAI-compatible API
+**Benchmark parameters (default):** `temperature: 0.7` · `top_p: 0.9` · `max_tokens: 500` · OpenAI-compatible API. GLM-5.3 variants use `reasoning_effort: low` and `max_tokens: 2048` because thinking is always enabled.
 
 ---
 
