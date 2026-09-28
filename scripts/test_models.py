@@ -192,7 +192,7 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
     if not content.strip():
         details = []
         if reasoning_chars:
-            details.append(f"reasoning_chars={reasoning_chars}")
+            details.append("reasoning only")
         if finish_reason:
             details.append(f"finish_reason={finish_reason}")
         if details:

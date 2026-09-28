@@ -69,7 +69,7 @@ class TestModelRequests(unittest.TestCase):
         ]
         result, _payload = self.run_call("z-ai/glm-5.3-flash", lines)
         self.assertFalse(result["success"])
-        self.assertIn(f"reasoning_chars={len('thinking')}", result["error"])
+        self.assertIn("reasoning only", result["error"])
         self.assertIn("finish_reason=length", result["error"])
 
 
