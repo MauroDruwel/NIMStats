@@ -35,9 +35,9 @@ ALL_MODELS = [
     "z-ai/glm-5.3-flash",
     "z-ai/glm-5.3",
     "nvidia/nemotron-nano-3-30b-a3b",
-    "mistralai/mistral-nemotron",
     "mistralai/mistral-large",
     "deepseek-ai/deepseek-v4.1-flash",
+    "nvidia/nemotron-4-340b-instruct",
 ]
 
 GROUP1_MODELS = ALL_MODELS[: len(ALL_MODELS) // 2 + len(ALL_MODELS) % 2]
