@@ -1,1 +1,1 @@
-openai/gpt-oss-20b
+nvidia/nemotron-3-ultra-550b-a55b
