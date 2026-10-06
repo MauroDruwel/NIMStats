@@ -37,6 +37,7 @@ ALL_MODELS = [
     "mistralai/mistral-large",
     "deepseek-ai/deepseek-v4.1-flash",
     "nvidia/nemotron-4-340b-instruct",
+    "nvidia/nemotron-3-super-120b-a12b",
 ]
 
 GLM_THINKING_MODELS = {"z-ai/glm-5.3-flash", "z-ai/glm-5.3"}
