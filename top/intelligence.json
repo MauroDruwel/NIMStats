@@ -1,16 +1,16 @@
 {
   "best_model": "z-ai/glm-5.3",
   "provider": "z-ai",
-  "score": 44,
+  "score": 45,
   "intelligence": 44.8,
-  "uptime": 43.8,
-  "avg_response_time_ms": 43489.82251082251,
+  "uptime": 43.9,
+  "avg_response_time_ms": 43319.43103448276,
   "best_response_time_ms": 2596,
-  "avg_time_to_first_token_ms": 30826.8,
-  "avg_throughput_tps": 21.7,
-  "total_runs": 528,
-  "success_count": 231,
-  "wins": 29,
-  "last_seen": "2026-10-08T18:00:11Z",
-  "generated_at": "2026-10-08T18:06:18Z"
+  "avg_time_to_first_token_ms": 30698.3,
+  "avg_throughput_tps": 21.9,
+  "total_runs": 529,
+  "success_count": 232,
+  "wins": 30,
+  "last_seen": "2026-10-08T19:00:12Z",
+  "generated_at": "2026-10-08T19:06:16Z"
 }
