@@ -262,7 +262,11 @@ def main() -> int:
         return 1
     print(f"Fetched {len(available)} models from {NVIDIA_MODELS_URL}")
 
-    api_key = os.getenv("ARTIFICIAL_ANALYSIS_API_KEY")
+    api_key = os.getenv("ARTIFICIAL_ANALYSIS_API_KEY", "").strip()
+    if api_key and not re.fullmatch(r"[A-Za-z0-9_\-]+", api_key):
+        # Never log the key itself -- only report that it failed validation.
+        print("Warning: ARTIFICIAL_ANALYSIS_API_KEY is not in the expected format; ignoring it", file=sys.stderr)
+        api_key = ""
     aa_scores = fetch_intelligence_from_api(api_key) if api_key else {}
     if aa_scores:
         print(f"Fetched {len(aa_scores)} intelligence scores from Artificial Analysis")
