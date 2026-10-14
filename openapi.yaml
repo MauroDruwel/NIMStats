@@ -16,6 +16,8 @@ servers:
   - url: https://nimstats.maurodruwel.be
     description: Production Cloudflare Pages Deployment
 
+security: []
+
 paths:
   /top:
     get:
@@ -131,8 +133,9 @@ components:
           description: Normalized ranking score (0-100)
           example: 58
         intelligence:
-          type: number
-          nullable: true
+          type:
+            - number
+            - "null"
           description: Artificial Analysis intelligence score
           example: 22.9
         uptime:
@@ -148,8 +151,9 @@ components:
           description: Fastest observed response latency in milliseconds
           example: 2768
         avg_time_to_first_token_ms:
-          type: number
-          nullable: true
+          type:
+            - number
+            - "null"
           description: Average Time to First Token (TTFT) in milliseconds
           example: 19035.9
         avg_throughput_tps:
