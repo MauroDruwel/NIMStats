@@ -1,16 +1,16 @@
 {
   "best_model": "nvidia/nemotron-3-ultra-550b-a55b",
   "provider": "nvidia",
-  "score": 90,
+  "score": 91,
   "intelligence": 22.9,
   "uptime": 80.6,
-  "avg_response_time_ms": 19763.908620689654,
+  "avg_response_time_ms": 19657.775862068964,
   "best_response_time_ms": 2768,
-  "avg_time_to_first_token_ms": 6763.8,
-  "avg_throughput_tps": 41.4,
+  "avg_time_to_first_token_ms": 6683.3,
+  "avg_throughput_tps": 41.5,
   "total_runs": 720,
   "success_count": 580,
-  "wins": 96,
-  "last_seen": "2026-10-15T02:00:09Z",
-  "generated_at": "2026-10-15T02:10:49Z"
+  "wins": 97,
+  "last_seen": "2026-10-15T03:00:10Z",
+  "generated_at": "2026-10-15T03:14:30Z"
 }
