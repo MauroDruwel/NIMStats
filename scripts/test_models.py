@@ -30,13 +30,13 @@ ALL_MODELS = [
     "nvidia/nemotron-3-ultra-550b-a55b",
     "nvidia/nemotron-3.5-lightning-30b-a3b",
     "openai/gpt-oss-20b",
-    "moonshotai/kimi-k3",
     "z-ai/glm-5.3-flash",
     "z-ai/glm-5.3",
     "nvidia/nemotron-nano-3-30b-a3b",
     "mistralai/mistral-large",
     "deepseek-ai/deepseek-v4.1-flash",
     "nvidia/nemotron-4-340b-instruct",
+    "stepfun-ai/step-5-preview",
     "nvidia/nemotron-3-super-120b-a12b",
 ]
 
