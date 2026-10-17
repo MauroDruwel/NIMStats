@@ -38,6 +38,7 @@ ALL_MODELS = [
     "nvidia/nemotron-4-340b-instruct",
     "stepfun-ai/step-5-preview",
     "nvidia/nemotron-3-super-120b-a12b",
+    "nvidia/nemotron-3.5-super-vl-120b-a12b",
 ]
 
 GLM_THINKING_MODELS = {"z-ai/glm-5.3-flash", "z-ai/glm-5.3"}
