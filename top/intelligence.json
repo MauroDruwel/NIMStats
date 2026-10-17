@@ -3,14 +3,14 @@
   "provider": "stepfun-ai",
   "score": 56,
   "intelligence": 43.7,
-  "uptime": 85.7,
-  "avg_response_time_ms": 11525.833333333334,
+  "uptime": 86.2,
+  "avg_response_time_ms": 11437.6,
   "best_response_time_ms": 3007,
-  "avg_time_to_first_token_ms": 8408.4,
+  "avg_time_to_first_token_ms": 8272.3,
   "avg_throughput_tps": 47.8,
-  "total_runs": 28,
-  "success_count": 24,
+  "total_runs": 29,
+  "success_count": 25,
   "wins": 6,
-  "last_seen": "2026-10-17T12:00:09Z",
-  "generated_at": "2026-10-17T12:05:57Z"
+  "last_seen": "2026-10-17T13:00:08Z",
+  "generated_at": "2026-10-17T13:05:31Z"
 }
