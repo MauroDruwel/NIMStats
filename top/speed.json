@@ -1,16 +1,16 @@
 {
   "best_model": "nvidia/nemotron-3-super-120b-a12b",
   "provider": "nvidia",
-  "score": 99,
+  "score": 100,
   "intelligence": 12.8,
   "uptime": 96.9,
-  "avg_response_time_ms": 11466.983870967742,
+  "avg_response_time_ms": 11402.507936507936,
   "best_response_time_ms": 3604,
-  "avg_time_to_first_token_ms": 2145.4,
-  "avg_throughput_tps": 47.4,
-  "total_runs": 64,
-  "success_count": 62,
+  "avg_time_to_first_token_ms": 2147.5,
+  "avg_throughput_tps": 47.7,
+  "total_runs": 65,
+  "success_count": 63,
   "wins": 7,
-  "last_seen": "2026-10-19T00:00:10Z",
-  "generated_at": "2026-10-19T00:06:08Z"
+  "last_seen": "2026-10-19T01:00:07Z",
+  "generated_at": "2026-10-19T01:05:47Z"
 }
