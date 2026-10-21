@@ -1,16 +1,16 @@
 {
   "best_model": "stepfun-ai/step-5-preview",
   "provider": "stepfun-ai",
-  "score": 74,
+  "score": 75,
   "intelligence": 43.7,
   "uptime": 88.5,
-  "avg_response_time_ms": 23768.104347826087,
+  "avg_response_time_ms": 23612.396551724138,
   "best_response_time_ms": 2814,
-  "avg_time_to_first_token_ms": 19337.2,
-  "avg_throughput_tps": 39.8,
-  "total_runs": 130,
-  "success_count": 115,
+  "avg_time_to_first_token_ms": 19207.0,
+  "avg_throughput_tps": 40.0,
+  "total_runs": 131,
+  "success_count": 116,
   "wins": 22,
-  "last_seen": "2026-10-21T18:00:08Z",
-  "generated_at": "2026-10-21T18:10:08Z"
+  "last_seen": "2026-10-21T19:00:11Z",
+  "generated_at": "2026-10-21T19:09:33Z"
 }
