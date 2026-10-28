@@ -1,1 +1,1 @@
-z-ai/glm-5.3
+openai/gpt-oss-20b
