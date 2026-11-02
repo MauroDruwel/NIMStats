@@ -1,1 +1,1 @@
-google/gemma-4-31b-it
+openai/gpt-oss-20b
