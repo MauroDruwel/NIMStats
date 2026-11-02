@@ -1,16 +1,16 @@
 {
-  "best_model": "openai/gpt-oss-20b",
-  "provider": "openai",
-  "score": 64,
+  "best_model": "google/gemma-4-31b-it",
+  "provider": "google",
+  "score": 54,
   "intelligence": null,
-  "uptime": 96.5,
-  "avg_response_time_ms": 22164.715107913667,
-  "best_response_time_ms": 3646,
-  "avg_time_to_first_token_ms": 13187.2,
-  "avg_throughput_tps": 41.7,
+  "uptime": 64.0,
+  "avg_response_time_ms": 116501.2104121475,
+  "best_response_time_ms": 9402,
+  "avg_time_to_first_token_ms": 92830.7,
+  "avg_throughput_tps": 8.5,
   "total_runs": 720,
-  "success_count": 695,
-  "wins": 148,
-  "last_seen": "2026-11-02T06:00:12Z",
-  "generated_at": "2026-11-02T06:16:29Z"
+  "success_count": 461,
+  "wins": 2,
+  "last_seen": "2026-11-02T07:00:10Z",
+  "generated_at": "2026-11-02T07:18:21Z"
 }
