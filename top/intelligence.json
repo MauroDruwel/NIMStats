@@ -1,16 +1,16 @@
 {
-  "best_model": "openai/gpt-oss-20b",
-  "provider": "openai",
-  "score": 64,
+  "best_model": "meta/llama-3.2-90b-vision-instruct",
+  "provider": "meta",
+  "score": 58,
   "intelligence": null,
-  "uptime": 95.6,
-  "avg_response_time_ms": 24348.18168604651,
-  "best_response_time_ms": 3646,
-  "avg_time_to_first_token_ms": 15496.6,
-  "avg_throughput_tps": 41.1,
+  "uptime": 76.8,
+  "avg_response_time_ms": 148483.6075949367,
+  "best_response_time_ms": 29393,
+  "avg_time_to_first_token_ms": 67664.2,
+  "avg_throughput_tps": 4.5,
   "total_runs": 720,
-  "success_count": 688,
-  "wins": 147,
-  "last_seen": "2026-11-03T00:00:10Z",
-  "generated_at": "2026-11-03T00:11:32Z"
+  "success_count": 553,
+  "wins": 0,
+  "last_seen": "2026-11-03T01:00:08Z",
+  "generated_at": "2026-11-03T01:12:48Z"
 }
