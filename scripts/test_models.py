@@ -31,16 +31,17 @@ ALL_MODELS = [
     "nvidia/nemotron-3.5-lightning-30b-a3b",
     "openai/gpt-oss-20b",
     "z-ai/glm-5.3-flash",
-    "z-ai/glm-5.3",
     "nvidia/nemotron-nano-3-30b-a3b",
     "mistralai/mistral-large",
     "deepseek-ai/deepseek-v4.1-flash",
     "nvidia/nemotron-4-340b-instruct",
     "stepfun-ai/step-5-preview",
     "nvidia/nemotron-3-super-120b-a12b",
+    "minimaxai/minimax-m3.1-flash",
+    "mistralai/mistral-large-4-1t-a52b",
 ]
 
-GLM_THINKING_MODELS = {"z-ai/glm-5.3-flash", "z-ai/glm-5.3"}
+GLM_THINKING_MODELS = {"z-ai/glm-5.3-flash"}
 
 GROUP1_MODELS = ALL_MODELS[: len(ALL_MODELS) // 2 + len(ALL_MODELS) % 2]
 
