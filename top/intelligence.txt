@@ -1,1 +1,1 @@
-openai/gpt-oss-20b
+stepfun-ai/step-5-preview
