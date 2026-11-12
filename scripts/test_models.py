@@ -38,6 +38,7 @@ ALL_MODELS = [
     "stepfun-ai/step-5-preview",
     "nvidia/nemotron-3-super-120b-a12b",
     "mistralai/mistral-large-4-1t-a52b",
+    "minimaxai/minimax-m3.1-flash",
 ]
 
 GLM_THINKING_MODELS = {"z-ai/glm-5.3-flash"}
