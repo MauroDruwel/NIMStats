@@ -1,16 +1,16 @@
 {
-  "best_model": "nvidia/nemotron-3-ultra-550b-a55b",
-  "provider": "nvidia",
-  "score": 61,
+  "best_model": "openai/gpt-oss-20b",
+  "provider": "openai",
+  "score": 62,
   "intelligence": null,
-  "uptime": 87.6,
-  "avg_response_time_ms": 14357.638668779715,
-  "best_response_time_ms": 1787,
-  "avg_time_to_first_token_ms": 4196.5,
-  "avg_throughput_tps": 55.2,
+  "uptime": 88.3,
+  "avg_response_time_ms": 67865.92452830188,
+  "best_response_time_ms": 4634,
+  "avg_time_to_first_token_ms": 60092.8,
+  "avg_throughput_tps": 26.7,
   "total_runs": 720,
-  "success_count": 631,
-  "wins": 190,
-  "last_seen": "2026-11-13T17:00:11Z",
-  "generated_at": "2026-11-13T17:09:13Z"
+  "success_count": 636,
+  "wins": 84,
+  "last_seen": "2026-11-13T18:00:14Z",
+  "generated_at": "2026-11-13T18:08:46Z"
 }
