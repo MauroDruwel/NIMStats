@@ -1,1 +1,1 @@
-minimaxai/minimax-m3.1-flash
+nvidia/nemotron-3-ultra-550b-a55b
