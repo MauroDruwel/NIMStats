@@ -24,19 +24,12 @@ OUTPUT_FILE = SCRIPT_DIR / "results.json"
 
 ALL_MODELS = [
     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-    "moonshotai/kimi-k2.6",
     "google/gemma-4-31b-it",
-    "meta/llama-3.2-90b-vision-instruct",
     "nvidia/nemotron-3-ultra-550b-a55b",
     "nvidia/nemotron-3.5-lightning-30b-a3b",
     "openai/gpt-oss-20b",
     "z-ai/glm-5.3-flash",
-    "nvidia/nemotron-nano-3-30b-a3b",
-    "mistralai/mistral-large",
-    "deepseek-ai/deepseek-v4.1-flash",
-    "nvidia/nemotron-4-340b-instruct",
     "stepfun-ai/step-5-preview",
-    "nvidia/nemotron-3-super-120b-a12b",
     "mistralai/mistral-large-4-1t-a52b",
     "minimaxai/minimax-m3.1-flash",
 ]
