@@ -27,11 +27,11 @@ ALL_MODELS = [
     "google/gemma-4-31b-it",
     "nvidia/nemotron-3-ultra-550b-a55b",
     "nvidia/nemotron-3.5-lightning-30b-a3b",
-    "openai/gpt-oss-20b",
     "z-ai/glm-5.3-flash",
     "stepfun-ai/step-5-preview",
     "mistralai/mistral-large-4-1t-a52b",
     "minimaxai/minimax-m3.1-flash",
+    "moonshotai/kimi-k3.1-pro",
 ]
 
 GLM_THINKING_MODELS = {"z-ai/glm-5.3-flash"}
