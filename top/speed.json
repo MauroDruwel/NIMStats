@@ -3,14 +3,14 @@
   "provider": "nvidia",
   "score": 100,
   "intelligence": null,
-  "uptime": 84.7,
-  "avg_response_time_ms": 9632.849180327868,
+  "uptime": 84.9,
+  "avg_response_time_ms": 9623.027823240589,
   "best_response_time_ms": 1515,
-  "avg_time_to_first_token_ms": 2174.7,
-  "avg_throughput_tps": 83.3,
+  "avg_time_to_first_token_ms": 2171.8,
+  "avg_throughput_tps": 83.4,
   "total_runs": 720,
-  "success_count": 610,
-  "wins": 397,
-  "last_seen": "2026-11-19T19:00:09Z",
-  "generated_at": "2026-11-19T19:06:11Z"
+  "success_count": 611,
+  "wins": 398,
+  "last_seen": "2026-11-19T20:00:08Z",
+  "generated_at": "2026-11-19T20:05:06Z"
 }
