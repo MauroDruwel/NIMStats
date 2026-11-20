@@ -13,10 +13,11 @@ const code = fs.readFileSync(file, 'utf8');
 // Load i18n.js in a minimal browser-like sandbox (no DOM needed at load time).
 const sandboxWindow = {};
 const sandboxLocalStorage = { getItem: () => null, setItem: () => {} };
+const sandboxDocument = { getElementById: () => null, documentElement: {}, querySelectorAll: () => [], addEventListener: () => {} };
 new Function('window', 'localStorage', 'document', code)(
   sandboxWindow,
   sandboxLocalStorage,
-  {}
+  sandboxDocument
 );
 
 const I18N = sandboxWindow.I18N;

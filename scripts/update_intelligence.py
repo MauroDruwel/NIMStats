@@ -26,47 +26,60 @@ def init_db_schema(conn: sqlite3.Connection) -> None:
 def fetch_intelligence_from_api(api_key: str) -> dict[str, float]:
     """Fetch model ratings from Artificial Analysis API."""
     print("Fetching intelligence scores from Artificial Analysis API...")
-    url = "https://artificialanalysis.ai/api/v2/data/llms/models"
+    base_url = "https://artificialanalysis.ai/api/v2/language/models/free"
     headers = {
         "x-api-key": api_key,
         "User-Agent": "NIMStats Benchmark (GitHub Action)"
     }
     
-    req = urllib.request.Request(url, headers=headers)
-    try:
-        with urllib.request.urlopen(req, timeout=15) as response:
-            payload = json.loads(response.read().decode())
-            data = payload.get("data", [])
-            
-            api_scores = {}
-            for item in data:
-                slug = item.get("slug", "").lower()
-                name = item.get("name", "").lower()
+    api_scores: dict[str, float] = {}
+    page = 1
+    
+    while True:
+        url = f"{base_url}?page={page}&page_size=200"
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=15) as response:
+                payload = json.loads(response.read().decode())
+                data = payload.get("data", [])
                 
-                evals = item.get("evaluations", {})
-                score = (
-                    evals.get("artificial_analysis_intelligence_index") or
-                    evals.get("intelligence_index") or
-                    evals.get("intelligence") or
-                    evals.get("quality_index") or
-                    item.get("intelligence_score") or
-                    evals.get("score")
-                )
+                for item in data:
+                    slug = item.get("slug", "").lower()
+                    name = item.get("name", "").lower()
+                    model_id = item.get("id", "").lower()
+                    
+                    evals = item.get("evaluations", {}) or {}
+                    score = (
+                        evals.get("artificial_analysis_intelligence_index") or
+                        evals.get("intelligence_index") or
+                        evals.get("intelligence") or
+                        evals.get("quality_index") or
+                        item.get("intelligence_score") or
+                        evals.get("score")
+                    )
+                    
+                    if score is not None:
+                        try:
+                            score_float = float(score)
+                            if slug:
+                                api_scores[slug] = score_float
+                            if name:
+                                api_scores[name] = score_float
+                            if model_id:
+                                api_scores[model_id] = score_float
+                        except ValueError:
+                            continue
                 
-                if score is not None:
-                    try:
-                        score_float = float(score)
-                        if slug:
-                            api_scores[slug] = score_float
-                        if name:
-                            api_scores[name] = score_float
-                    except ValueError:
-                        continue
+                pagination = payload.get("pagination", {})
+                if pagination.get("has_more") and page < pagination.get("total_pages", 1):
+                    page += 1
+                else:
+                    break
+        except Exception as e:
+            print(f"Warning: Failed to fetch from Artificial Analysis API ({e}). Leaving scores as NULL/N/A.", file=sys.stderr)
+            break
             
-            return api_scores
-    except Exception as e:
-        print(f"Warning: Failed to fetch from Artificial Analysis API ({e}). Leaving scores as NULL/N/A.", file=sys.stderr)
-        return {}
+    return api_scores
 
 
 def fuzzy_match_score(model_name: str, api_scores: dict[str, float]) -> float | None:
