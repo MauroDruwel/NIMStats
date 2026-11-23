@@ -238,16 +238,33 @@ function initLimitFilters() {
 async function init() {
   try {
     initTheme();
-    const SQL = await initSqlJs({
-      locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
-    });
 
-    const res = await fetch('history.db');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const buf = await res.arrayBuffer();
-    state.db = new SQL.Database(new Uint8Array(buf));
+    // 1. Attempt fast edge API load first (Cloudflare D1, no WASM / no DB download)
+    let data = null;
+    try {
+      const apiRes = await fetch('/api/history');
+      if (apiRes.ok) {
+        const json = await apiRes.json();
+        if (json && Array.isArray(json.runs) && json.runs.length > 0) {
+          data = json;
+        }
+      }
+    } catch (_) {
+      // Fall through to SQLite WebAssembly fallback
+    }
 
-    const data = loadFromDb(state.db);
+    // 2. Fallback to client-side SQLite if edge API is not bound or running offline
+    if (!data) {
+      const SQL = await initSqlJs({
+        locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+      });
+
+      const res = await fetch('history.db');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const buf = await res.arrayBuffer();
+      state.db = new SQL.Database(new Uint8Array(buf));
+      data = loadFromDb(state.db);
+    }
 
     const processed = processData(data);
     state.rawRuns = processed.runs; // chronological (oldest first)
@@ -277,8 +294,9 @@ async function init() {
     populateExplorerSelect();
     populateCompareSelects();
 
-    // Init leaderboard sort
+    // Init leaderboard sort & presets
     initLeaderboardSort();
+    initLeaderboardPresets();
 
     // Limit filters
     initLimitFilters();

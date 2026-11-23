@@ -1,0 +1,635 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "NIMStats API",
+    "version": "1.1.0",
+    "description": "Real-time API endpoints for NVIDIA NIM benchmarks, rankings, response times, reliability metrics, and composite scoring hosted on https://nimstats.maurodruwel.be. Backed by Cloudflare D1 serverless SQLite at the edge.\n",
+    "contact": {
+      "name": "Mauro Druwel",
+      "url": "https://github.com/MauroDruwel/NIMStats"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/MauroDruwel/NIMStats/blob/main/LICENSE"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://nimstats.maurodruwel.be",
+      "description": "Production Cloudflare Pages Deployment"
+    },
+    {
+      "url": "https://nimstats.pages.dev",
+      "description": "Cloudflare Pages Direct Domain"
+    }
+  ],
+  "security": [],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health check endpoint",
+        "operationId": "getHealth",
+        "description": "Returns health status, timestamp, and edge service name.",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models": {
+      "get": {
+        "summary": "List all tracked models",
+        "operationId": "getModels",
+        "description": "Returns list of tracked NVIDIA NIM models with intelligence scores.",
+        "responses": {
+          "200": {
+            "description": "List of models",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelsList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history": {
+      "get": {
+        "summary": "Historical benchmark runs",
+        "operationId": "getHistory",
+        "description": "Returns trailing benchmark runs and model intelligence scores queried from Cloudflare D1 edge database with global CDN caching.\n",
+        "responses": {
+          "200": {
+            "description": "Historical benchmark runs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/top": {
+      "get": {
+        "summary": "Query top models dynamically",
+        "operationId": "getTopModelsQuery",
+        "description": "Returns top models sorted dynamically by reliability, composite score, speed, intelligence, or throughput over a trailing run window.\n",
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Metric to sort models by.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "reliability",
+                "uptime",
+                "composite",
+                "speed",
+                "latency",
+                "intelligence",
+                "tps",
+                "throughput"
+              ],
+              "default": "reliability"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of top models to return (1-50).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "description": "Trailing runs evaluation window (10-500).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 10,
+              "maximum": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranked list of top models",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopModelsQueryResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reliable": {
+      "get": {
+        "summary": "Top 5 most reliable models",
+        "operationId": "getTopReliableModels",
+        "description": "Shortcut endpoint returning top reliable models (highest uptime and lowest error rate) over the trailing evaluation window.\n",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of reliable models to return (1-50).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "description": "Trailing runs evaluation window (10-500).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 10,
+              "maximum": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top reliable models",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopModelsQueryResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/top": {
+      "get": {
+        "summary": "Get the top overall model (balanced score)",
+        "operationId": "getTopModel",
+        "description": "Returns the top-ranked model using the balanced composite score: reliability (25%) + intelligence (50%) + speed/throughput (25%).\n",
+        "responses": {
+          "200": {
+            "description": "Top overall model details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/top/model": {
+      "get": {
+        "summary": "Get top model name (plain text)",
+        "operationId": "getTopModelName",
+        "description": "Returns just the model name string of the top balanced model.",
+        "responses": {
+          "200": {
+            "description": "Model identifier string",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "nvidia/nemotron-3-ultra-550b-a55b"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/top/speed": {
+      "get": {
+        "summary": "Get the fastest model",
+        "operationId": "getFastestModel",
+        "description": "Returns the top model by speed score: speed (50%) + throughput (50%).\n",
+        "responses": {
+          "200": {
+            "description": "Fastest model details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/top/speed/model": {
+      "get": {
+        "summary": "Get fastest model name (plain text)",
+        "operationId": "getFastestModelName",
+        "description": "Returns just the model name string of the fastest model.",
+        "responses": {
+          "200": {
+            "description": "Model identifier string",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/top/intelligence": {
+      "get": {
+        "summary": "Get the most intelligent model",
+        "operationId": "getMostIntelligentModel",
+        "description": "Returns the top model by intelligence score: intelligence (70%) + reliability (30%).\n",
+        "responses": {
+          "200": {
+            "description": "Most intelligent model details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/top/intelligence/model": {
+      "get": {
+        "summary": "Get most intelligent model name (plain text)",
+        "operationId": "getMostIntelligentModelName",
+        "description": "Returns just the model name string of the most intelligent model.",
+        "responses": {
+          "200": {
+            "description": "Model identifier string",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "deepseek-ai/deepseek-v4.1-flash"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthStatus": {
+        "type": "object",
+        "required": [
+          "status",
+          "timestamp",
+          "service"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-23T10:00:00Z"
+          },
+          "service": {
+            "type": "string",
+            "example": "nimstats-edge"
+          }
+        }
+      },
+      "ModelsList": {
+        "type": "object",
+        "required": [
+          "models"
+        ],
+        "properties": {
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "name": {
+                  "type": "string",
+                  "example": "meta/llama-3.3-70b-instruct"
+                },
+                "intelligence_score": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "example": 78.5
+                }
+              }
+            }
+          }
+        }
+      },
+      "HistoryData": {
+        "type": "object",
+        "required": [
+          "runs",
+          "modelIntel"
+        ],
+        "properties": {
+          "runs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "_dbId": {
+                  "type": "integer"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "prompt": {
+                  "type": "string"
+                },
+                "models": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "summary": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "modelIntel": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "TopModelsQueryResult": {
+        "type": "object",
+        "required": [
+          "sort",
+          "limit",
+          "window_runs",
+          "timestamp",
+          "models"
+        ],
+        "properties": {
+          "sort": {
+            "type": "string",
+            "example": "reliability"
+          },
+          "limit": {
+            "type": "integer",
+            "example": 5
+          },
+          "window_runs": {
+            "type": "integer",
+            "example": 100
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-23T10:00:00Z"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelRankingEntry"
+            }
+          }
+        }
+      },
+      "ModelRankingEntry": {
+        "type": "object",
+        "required": [
+          "rank",
+          "model",
+          "uptime",
+          "uptime_pct",
+          "error_rate",
+          "error_rate_pct",
+          "intelligence",
+          "composite_score",
+          "total_tests",
+          "successful_tests",
+          "failed_tests"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "example": 1
+          },
+          "model": {
+            "type": "string",
+            "example": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+          },
+          "uptime": {
+            "type": "number",
+            "example": 0.99
+          },
+          "uptime_pct": {
+            "type": "string",
+            "example": "99.0%"
+          },
+          "error_rate": {
+            "type": "number",
+            "example": 0.01
+          },
+          "error_rate_pct": {
+            "type": "string",
+            "example": "1.0%"
+          },
+          "avg_time_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "example": 6428.8
+          },
+          "best_time_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "example": 2702
+          },
+          "avg_ttft_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "example": 1936.1
+          },
+          "avg_tps": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "example": 106.0
+          },
+          "intelligence": {
+            "type": "number",
+            "example": 50.0
+          },
+          "composite_score": {
+            "type": "integer",
+            "example": 85
+          },
+          "total_tests": {
+            "type": "integer",
+            "example": 100
+          },
+          "successful_tests": {
+            "type": "integer",
+            "example": 99
+          },
+          "failed_tests": {
+            "type": "integer",
+            "example": 1
+          }
+        }
+      },
+      "TopModel": {
+        "type": "object",
+        "required": [
+          "best_model",
+          "provider",
+          "score",
+          "uptime",
+          "avg_response_time_ms",
+          "total_runs",
+          "success_count",
+          "generated_at"
+        ],
+        "properties": {
+          "best_model": {
+            "type": "string",
+            "description": "Full model identifier",
+            "example": "nvidia/nemotron-3-ultra-550b-a55b"
+          },
+          "provider": {
+            "type": "string",
+            "description": "Model vendor/creator",
+            "example": "nvidia"
+          },
+          "score": {
+            "type": "number",
+            "description": "Normalized ranking score (0-100)",
+            "example": 58
+          },
+          "intelligence": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Artificial Analysis intelligence score",
+            "example": 22.9
+          },
+          "uptime": {
+            "type": "number",
+            "description": "Success rate percentage over the trailing evaluation window",
+            "example": 80.0
+          },
+          "avg_response_time_ms": {
+            "type": "number",
+            "description": "Average response latency in milliseconds",
+            "example": 30614.5
+          },
+          "best_response_time_ms": {
+            "type": "number",
+            "description": "Fastest observed response latency in milliseconds",
+            "example": 2768
+          },
+          "avg_time_to_first_token_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Average Time to First Token (TTFT) in milliseconds",
+            "example": 19035.9
+          },
+          "avg_throughput_tps": {
+            "type": "number",
+            "description": "Average tokens per second throughput",
+            "example": 37.6
+          },
+          "total_runs": {
+            "type": "integer",
+            "description": "Total number of benchmark runs evaluated",
+            "example": 720
+          },
+          "success_count": {
+            "type": "integer",
+            "description": "Number of successful benchmark calls",
+            "example": 576
+          },
+          "wins": {
+            "type": "integer",
+            "description": "Number of benchmark runs where this model was the fastest",
+            "example": 100
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of most recent successful benchmark run",
+            "example": "2026-09-28T19:00:09Z"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the rankings were calculated",
+            "example": "2026-09-28T19:13:09Z"
+          }
+        }
+      }
+    }
+  }
+}

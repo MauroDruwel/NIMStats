@@ -34,3 +34,8 @@ scripts/results*.json
 # Python
 __pycache__/
 *.pyc
+
+# Cloudflare D1 exports
+scripts/d1_seed.sql
+.wrangler/
+

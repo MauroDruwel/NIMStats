@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """Fetch and update model intelligence scores in history.db from Artificial Analysis."""
 
+import json
 import os
 import sqlite3
 import sys
 import urllib.request
-import json
 from pathlib import Path
-from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HISTORY_DB = REPO_ROOT / "history.db"
@@ -75,7 +74,7 @@ def fetch_intelligence_from_api(api_key: str) -> dict[str, float]:
                     page += 1
                 else:
                     break
-        except Exception as e:
+        except (urllib.error.URLError, OSError, ValueError, KeyError) as e:
             print(f"Warning: Failed to fetch from Artificial Analysis API ({e}). Leaving scores as NULL/N/A.", file=sys.stderr)
             break
             
@@ -108,9 +107,8 @@ def fuzzy_match_score(model_name: str, api_scores: dict[str, float]) -> float | 
             # Enforce strict model size checks if present (e.g., 70b, 90b, 49b)
             size_tokens_clean = [t for t in tokens if re.match(r'^\d+b$', t)]
             size_tokens_key = [t for t in key_tokens if re.match(r'^\d+b$', t)]
-            if size_tokens_clean and size_tokens_key:
-                if size_tokens_clean[0] != size_tokens_key[0]:
-                    continue  # Size mismatch, skip
+            if size_tokens_clean and size_tokens_key and size_tokens_clean[0] != size_tokens_key[0]:
+                continue  # Size mismatch, skip
                     
             # Score by overlap size, and break ties with ratio
             score = len(overlap) + ratio
@@ -157,6 +155,22 @@ def main() -> int:
             
         conn.commit()
         print(f"OK: Successfully updated intelligence scores for {updated_count} models in history.db")
+
+        # Also update Cloudflare D1 if credentials available
+        try:
+            from push_run_to_d1 import escape_sql_string, execute_d1_sql, get_auth_token
+            token = get_auth_token()
+            if token:
+                d1_stmts = []
+                for model in models:
+                    s = fuzzy_match_score(model, api_scores) if api_scores else None
+                    score_val = str(s) if s is not None else "NULL"
+                    d1_stmts.append(f"UPDATE models SET intelligence_score = {score_val} WHERE name = {escape_sql_string(model)};")
+                if d1_stmts:
+                    execute_d1_sql(" ".join(d1_stmts), token)
+                    print("OK: Successfully synced intelligence scores to Cloudflare D1")
+        except (OSError, RuntimeError) as e:
+            print(f"Note: Cloudflare D1 intelligence sync skipped ({e})")
         
     finally:
         conn.close()
