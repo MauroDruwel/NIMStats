@@ -16,7 +16,7 @@ window.I18N = {
 
     // 错误 / Error
     'error.title': '加载基准测试数据失败',
-    'error.msg': '错误：{msg}。请确保 history.db 存在且通过 HTTP 方式访问本页面。',
+    'error.msg': '错误：{msg}。无法从边缘 API 获取基准测试数据。',
 
     // 概览 / Overview
     'ov.title': '仪表盘概览',
@@ -208,7 +208,7 @@ window.I18N = {
 
     // 错误 / Error
     'error.title': 'Failed to load benchmark data',
-    'error.msg': 'Error: {msg}. Make sure history.db exists and you\'re serving this page via HTTP.',
+    'error.msg': 'Error: {msg}. Unable to load benchmark data from edge API.',
 
     // 概览 / Overview
     'ov.title': 'Dashboard Overview',
@@ -395,7 +395,7 @@ window.I18N = {
     'theme.toggle': 'Cambiar tema',
     'loading.text': 'Cargando datos de referencia…',
     'error.title': 'Error al cargar los datos de referencia',
-    'error.msg': 'Error: {msg}. Asegúrate de que history.db exista y de servir esta página vía HTTP.',
+    'error.msg': 'Error: {msg}. No se pudieron cargar los datos desde la API.',
     'ov.title': 'Resumen del panel',
     'ov.runs_limit': 'Límite de ejecuciones:',
     'ov.limit.30': '30 ejecuciones',
@@ -548,7 +548,7 @@ window.I18N = {
     'theme.toggle': 'Alternar tema',
     'loading.text': 'Carregando dados de benchmark…',
     'error.title': 'Falha ao carregar os dados de benchmark',
-    'error.msg': 'Erro: {msg}. Certifique-se de que history.db existe e de servir esta página via HTTP.',
+    'error.msg': 'Erro: {msg}. Não foi possível carregar os dados da API.',
     'ov.title': 'Visão geral do painel',
     'ov.runs_limit': 'Limite de execuções:',
     'ov.limit.30': '30 execuções',
@@ -701,7 +701,7 @@ window.I18N = {
     'theme.toggle': '테마 전환',
     'loading.text': '벤치마크 데이터 로드 중…',
     'error.title': '벤치마크 데이터를 불러오지 못했습니다',
-    'error.msg': '오류: {msg}. history.db가 존재하고 이 페이지를 HTTP로 제공하는지 확인하세요.',
+    'error.msg': '오류: {msg}. 에지 API에서 벤치마크 데이터를 로드할 수 없습니다.',
     'ov.title': '대시보드 개요',
     'ov.runs_limit': '실행 횟수:',
     'ov.limit.30': '30회',
@@ -854,7 +854,7 @@ window.I18N = {
     'theme.toggle': 'テーマ切り替え',
     'loading.text': 'ベンチマークデータを読み込み中…',
     'error.title': 'ベンチマークデータの読み込みに失敗しました',
-    'error.msg': 'エラー: {msg}。history.dbが存在し、このページがHTTP経由で提供されていることを確認してください。',
+    'error.msg': 'エラー: {msg}。エッジAPIからベンチマークデータを読み込めませんでした。',
     'ov.title': 'ダッシュボード概要',
     'ov.runs_limit': '実行回数:',
     'ov.limit.30': '30回',
@@ -1007,7 +1007,7 @@ window.I18N = {
     'theme.toggle': 'Changer de thème',
     'loading.text': 'Chargement des données de benchmark…',
     'error.title': 'Échec du chargement des données de benchmark',
-    'error.msg': 'Erreur : {msg}. Assurez-vous que history.db existe et que cette page est servie via HTTP.',
+    'error.msg': 'Erreur : {msg}. Impossible de charger les données depuis l\'API.',
     'ov.title': 'Aperçu du tableau de bord',
     'ov.runs_limit': 'Limite d\'exécutions :',
     'ov.limit.30': '30 exécutions',
@@ -1160,7 +1160,7 @@ window.I18N = {
     'theme.toggle': 'Theme wechseln',
     'loading.text': 'Benchmark-Daten werden geladen…',
     'error.title': 'Fehler beim Laden der Benchmark-Daten',
-    'error.msg': 'Fehler: {msg}. Stelle sicher, dass history.db vorhanden ist und diese Seite über HTTP bereitgestellt wird.',
+    'error.msg': 'Fehler: {msg}. Daten konnten nicht über die Edge-API geladen werden.',
     'ov.title': 'Dashboard-Übersicht',
     'ov.runs_limit': 'Ausführungslimit:',
     'ov.limit.30': '30 Ausführungen',
@@ -1313,7 +1313,7 @@ window.I18N = {
     'theme.toggle': 'Переключить тему',
     'loading.text': 'Загрузка данных бенчмарка…',
     'error.title': 'Не удалось загрузить данные бенчмарка',
-    'error.msg': 'Ошибка: {msg}. Убедитесь, что файл history.db существует и страница открыта по HTTP.',
+    'error.msg': 'Ошибка: {msg}. Не удалось загрузить данные бенчмарка из API.',
     'ov.title': 'Обзор панели',
     'ov.runs_limit': 'Лимит прогонов:',
     'ov.limit.30': '30 прогонов',

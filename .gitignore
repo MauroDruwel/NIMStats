@@ -35,6 +35,12 @@ scripts/results*.json
 __pycache__/
 *.pyc
 
+# SQLite database (despawned in favor of Cloudflare D1)
+history.db
+*.db
+*.db-journal
+*.db-wal
+
 # Cloudflare D1 exports
 scripts/d1_seed.sql
 .wrangler/

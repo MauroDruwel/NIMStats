@@ -9,12 +9,11 @@ Usage:
 """
 
 import ast
-import sqlite3
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from db_utils import HISTORY_DB  # noqa: E402
+from push_run_to_d1 import escape_sql_string, execute_d1_sql, get_auth_token
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 TEST_MODELS_FILE = SCRIPT_DIR / "test_models.py"
@@ -25,9 +24,8 @@ def _find_all_models_node(source: str):
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "ALL_MODELS":
-                    if isinstance(node.value, ast.List):
-                        return node, node.value
+                if isinstance(target, ast.Name) and target.id == "ALL_MODELS" and isinstance(node.value, ast.List):
+                    return node, node.value
     raise RuntimeError("Could not find ALL_MODELS in test_models.py")
 
 
@@ -54,12 +52,6 @@ def _write_all_models(models: list[str]) -> None:
     TEST_MODELS_FILE.write_text("".join(source_lines), encoding="utf-8")
 
 
-def _db_connect() -> sqlite3.Connection:
-    conn = sqlite3.connect(str(HISTORY_DB))
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
-
-
 def cmd_list() -> int:
     configured = _read_all_models()
     print("=== Models in test_models.py ===")
@@ -67,25 +59,30 @@ def cmd_list() -> int:
         print(f"  {i:2}. {m}")
     print(f"  Total: {len(configured)}")
 
-    conn = _db_connect()
-    db_models = [r[0] for r in conn.execute("SELECT name FROM models ORDER BY name").fetchall()]
-    print(f"\n=== Models in history.db ({len(db_models)}) ===")
+    token = get_auth_token()
+    if not token:
+        print("Warning: No Cloudflare API token found to inspect D1.")
+        return 0
+
+    resp = execute_d1_sql("SELECT name FROM models ORDER BY name;", token)
+    db_models = [r["name"] for r in resp.get("result", [{}])[0].get("results", [])]
+    print(f"\n=== Models in Cloudflare D1 ({len(db_models)}) ===")
     for m in db_models:
         in_cfg = "OK" if m in configured else "ORPHANED"
-        count = conn.execute(
-            "SELECT COUNT(*) FROM model_results mr JOIN models m ON mr.model_id = m.id WHERE m.name = ?",
-            (m,),
-        ).fetchone()[0]
+        c_resp = execute_d1_sql(
+            f"SELECT COUNT(*) as count FROM model_results mr JOIN models m ON mr.model_id = m.id WHERE m.name = {escape_sql_string(m)};",
+            token,
+        )
+        count = c_resp.get("result", [{}])[0].get("results", [{}])[0].get("count", 0)
         print(f"  {in_cfg:9} {m:50} {count} results")
 
     orphans = [m for m in db_models if m not in configured]
     if orphans:
-        print(f"\n{len(orphans)} orphaned model(s) in DB not in test_models.py.")
+        print(f"\n{len(orphans)} orphaned model(s) in D1 not in test_models.py.")
         print("Run 'python scripts/manage_models.py purge' to clean them up.")
     else:
-        print("\nAll DB models match test_models.py. Clean!")
+        print("\nAll D1 models match test_models.py. Clean!")
 
-    conn.close()
     return 0
 
 
@@ -113,93 +110,64 @@ def cmd_remove(model_id: str) -> int:
         half = len(models) // 2 + len(models) % 2
         print(f"Groups auto-balanced: group1={half}, group2={len(models) - half}.")
 
-    conn = _db_connect()
-    row = conn.execute("SELECT id FROM models WHERE name = ?", (model_id,)).fetchone()
-    if not row:
-        print(f"'{model_id}' not found in history.db — nothing to purge.")
-        conn.close()
+    token = get_auth_token()
+    if not token:
+        print("Warning: No Cloudflare API token found; DB purge skipped in Cloudflare D1.")
         return 0
 
-    model_id_db = row[0]
-    count = conn.execute("SELECT COUNT(*) FROM model_results WHERE model_id = ?", (model_id_db,)).fetchone()[0]
+    row_resp = execute_d1_sql(f"SELECT id FROM models WHERE name = {escape_sql_string(model_id)};", token)
+    results = row_resp.get("result", [{}])[0].get("results", [])
+    if not results:
+        print(f"'{model_id}' not found in Cloudflare D1 — nothing to purge.")
+        return 0
 
-    # Check if any run has this model as fastest_model_id
-    fastest = conn.execute(
-        "SELECT COUNT(*) FROM runs WHERE fastest_model_id = ?", (model_id_db,)
-    ).fetchone()[0]
-    if fastest:
-        print(f"  Clearing fastest_model_id on {fastest} run(s)...")
-        conn.execute(
-            "UPDATE runs SET fastest_model_id = NULL, fastest_time = NULL WHERE fastest_model_id = ?",
-            (model_id_db,),
-        )
+    model_id_db = results[0]["id"]
+    count_resp = execute_d1_sql(f"SELECT COUNT(*) as count FROM model_results WHERE model_id = {model_id_db};", token)
+    count = count_resp.get("result", [{}])[0].get("results", [{}])[0].get("count", 0)
 
-    conn.execute("DELETE FROM model_results WHERE model_id = ?", (model_id_db,))
-    conn.execute("DELETE FROM models WHERE id = ?", (model_id_db,))
-    conn.commit()
-    conn.execute("VACUUM")
-    conn.close()
-
-    print(f"Purged {count} model_results and removed '{model_id}' from history.db.")
+    stmts = [
+        f"UPDATE runs SET fastest_model_id = NULL, fastest_time = NULL WHERE fastest_model_id = {model_id_db};",
+        f"DELETE FROM model_results WHERE model_id = {model_id_db};",
+        f"DELETE FROM models WHERE id = {model_id_db};",
+    ]
+    execute_d1_sql(" ".join(stmts), token)
+    print(f"Purged {count} model_results and removed '{model_id}' from Cloudflare D1.")
     return 0
 
 
 def cmd_purge() -> int:
     configured = set(_read_all_models())
-    conn = _db_connect()
-    db_models = [r[0] for r in conn.execute("SELECT name FROM models ORDER BY name").fetchall()]
-    orphans = [m for m in db_models if m not in configured]
+    token = get_auth_token()
+    if not token:
+        print("Warning: No Cloudflare API token found; DB purge skipped in Cloudflare D1.")
+        return 0
 
-    purged_models = 0
+    resp = execute_d1_sql("SELECT id, name FROM models ORDER BY name;", token)
+    db_rows = resp.get("result", [{}])[0].get("results", [])
+    orphans = [r for r in db_rows if r["name"] not in configured]
+
+    if not orphans:
+        print("No orphaned models found in Cloudflare D1. D1 is clean!")
+        return 0
+
+    print(f"Found {len(orphans)} orphaned model(s) in Cloudflare D1:")
+    stmts = []
     total_results = 0
+    for r in orphans:
+        mid = r["id"]
+        m = r["name"]
+        c_resp = execute_d1_sql(f"SELECT COUNT(*) as count FROM model_results WHERE model_id = {mid};", token)
+        cnt = c_resp.get("result", [{}])[0].get("results", [{}])[0].get("count", 0)
+        total_results += cnt
+        print(f"  {m:50} {cnt} results")
+        stmts.append(f"UPDATE runs SET fastest_model_id = NULL, fastest_time = NULL WHERE fastest_model_id = {mid};")
+        stmts.append(f"DELETE FROM model_results WHERE model_id = {mid};")
+        stmts.append(f"DELETE FROM models WHERE id = {mid};")
 
-    if orphans:
-        print(f"Found {len(orphans)} orphaned model(s):")
-        for m in orphans:
-            row = conn.execute("SELECT id FROM models WHERE name = ?", (m,)).fetchone()
-            mid = row[0]
-            count = conn.execute("SELECT COUNT(*) FROM model_results WHERE model_id = ?", (mid,)).fetchone()[0]
-            total_results += count
-            print(f"  {m:50} {count} results")
-
-        print(f"\nPurging {total_results} total model_results...")
-
-        for m in orphans:
-            row = conn.execute("SELECT id FROM models WHERE name = ?", (m,)).fetchone()
-            mid = row[0]
-            conn.execute(
-                "UPDATE runs SET fastest_model_id = NULL, fastest_time = NULL WHERE fastest_model_id = ?",
-                (mid,),
-            )
-            conn.execute("DELETE FROM model_results WHERE model_id = ?", (mid,))
-            conn.execute("DELETE FROM models WHERE id = ?", (mid,))
-            purged_models += 1
-
-    # Clean up orphaned errors and prompts
-    cur_errors = conn.execute(
-        "DELETE FROM errors WHERE id NOT IN (SELECT DISTINCT error_id FROM model_results WHERE error_id IS NOT NULL)"
-    )
-    cur_prompts = conn.execute(
-        "DELETE FROM prompts WHERE id NOT IN (SELECT DISTINCT prompt_id FROM runs)"
-    )
-
-    any_changes = purged_models > 0 or cur_errors.rowcount > 0 or cur_prompts.rowcount > 0
-
-    if any_changes:
-        conn.commit()
-        conn.execute("VACUUM")
-        print("\nPurge complete:")
-        if purged_models > 0:
-            print(f"  - Purged {purged_models} orphaned model(s) and {total_results} results.")
-        if cur_errors.rowcount > 0:
-            print(f"  - Cleaned up {cur_errors.rowcount} orphaned error message(s).")
-        if cur_prompts.rowcount > 0:
-            print(f"  - Cleaned up {cur_prompts.rowcount} orphaned prompt(s).")
-        print("Database VACUUMed and compacted successfully.")
-    else:
-        print("No orphaned models, errors, or prompts found. DB is clean!")
-
-    conn.close()
+    stmts.append("DELETE FROM errors WHERE id NOT IN (SELECT DISTINCT error_id FROM model_results WHERE error_id IS NOT NULL);")
+    stmts.append("DELETE FROM prompts WHERE id NOT IN (SELECT DISTINCT prompt_id FROM runs);")
+    execute_d1_sql(" ".join(stmts), token)
+    print(f"\nPurge complete: Removed {len(orphans)} orphaned models and {total_results} results from Cloudflare D1.")
     return 0
 
 

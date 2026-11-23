@@ -38,7 +38,6 @@ Chart.defaults.font.family = "'Outfit', sans-serif";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const state = {
-  db: null,
   rawRuns: [],
   runs: [],
   modelNames: [],

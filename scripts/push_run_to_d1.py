@@ -6,6 +6,7 @@ import os
 import sys
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -14,30 +15,79 @@ DATABASE_ID = os.environ.get("CLOUDFLARE_D1_DATABASE_ID", "f1f8a2eb-6359-4940-8e
 MAX_RUNS = 720
 
 
+def _read_token_from_file() -> tuple[str | None, str | None]:
+    wrangler_config = Path.home() / "Library/Preferences/.wrangler/config/default.toml"
+    if not wrangler_config.exists():
+        wrangler_config = Path.home() / ".wrangler/config/default.toml"
+    if not wrangler_config.exists():
+        return None, None
+
+    token, exp = None, None
+    try:
+        with open(wrangler_config) as f:
+            for line in f:
+                if line.startswith("oauth_token"):
+                    token = line.split("=")[1].strip().strip('"\n ')
+                elif line.startswith("expiration_time"):
+                    exp = line.split("=")[1].strip().strip('"\n ')
+    except OSError:
+        pass
+    return token, exp
+
+
+def refresh_wrangler_token() -> str | None:
+    """Automatically invoke wrangler whoami to refresh local OAuth credentials."""
+    import shutil
+    import subprocess
+
+    candidates = [
+        ["pnpm", "dlx", "wrangler", "whoami"],
+        [os.path.expanduser("~/.local/bin/pnpm"), "dlx", "wrangler", "whoami"],
+        ["npx", "wrangler", "whoami"],
+    ]
+    for cmd in candidates:
+        if shutil.which(cmd[0]) or os.path.exists(cmd[0]):
+            try:
+                subprocess.run(
+                    cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=15,
+                    check=False,
+                )
+                new_token, _ = _read_token_from_file()
+                if new_token:
+                    return new_token
+            except (OSError, subprocess.SubprocessError):
+                continue
+    return None
+
+
 def get_auth_token() -> str | None:
-    """Retrieve auth token from environment or local Wrangler config."""
+    """Retrieve auth token from environment or local Wrangler config with auto-refresh."""
     token = os.environ.get("CLOUDFLARE_API_TOKEN")
     if token:
         return token
 
-    # Check local wrangler config
-    wrangler_config = Path.home() / "Library/Preferences/.wrangler/config/default.toml"
-    if not wrangler_config.exists():
-        wrangler_config = Path.home() / ".wrangler/config/default.toml"
+    token, exp = _read_token_from_file()
+    if not token:
+        return None
 
-    if wrangler_config.exists():
+    # Auto-refresh if expired
+    if exp:
         try:
-            with open(wrangler_config) as f:
-                for line in f:
-                    if line.startswith("oauth_token"):
-                        return line.split("=")[1].strip().strip('"\n ')
-        except OSError:
+            exp_dt = datetime.fromisoformat(exp.replace("Z", "+00:00"))
+            if datetime.now(timezone.utc) >= exp_dt:
+                refreshed = refresh_wrangler_token()
+                if refreshed:
+                    return refreshed
+        except (ValueError, TypeError):
             pass
 
-    return None
+    return token
 
 
-def execute_d1_sql(sql: str, token: str) -> dict[str, Any]:
+def execute_d1_sql(sql: str, token: str, retry_on_401: bool = True) -> dict[str, Any]:
     """Execute SQL statement(s) against Cloudflare D1 via the REST API."""
     url = f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/d1/database/{DATABASE_ID}/query"
     payload = json.dumps({"sql": sql}).encode("utf-8")
@@ -51,8 +101,15 @@ def execute_d1_sql(sql: str, token: str) -> dict[str, Any]:
         },
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        if e.code == 401 and retry_on_401 and not os.environ.get("CLOUDFLARE_API_TOKEN"):
+            new_token = refresh_wrangler_token()
+            if new_token and new_token != token:
+                return execute_d1_sql(sql, new_token, retry_on_401=False)
+        raise
 
 
 def escape_sql_string(val: str | None) -> str:

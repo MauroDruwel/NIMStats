@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from db_utils import write_run
+from push_run_to_d1 import push_run
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
@@ -53,19 +53,11 @@ def main() -> int:
         },
     }
 
-    # Push to Cloudflare D1 edge database
-    try:
-        from push_run_to_d1 import push_run
-        push_run(merged_run)
-    except (OSError, RuntimeError) as e:
-        print(f"Warning: Cloudflare D1 push skipped ({e})", file=sys.stderr)
-
-    # Maintain local history.db if present for backward compatibility
-    try:
-        write_run(merged_run)
-        print(f"✓ Updated history.db with new run ({success_count}/{total_count} models passed)")
-    except (OSError, RuntimeError) as e:
-        print(f"Note: local history.db write skipped ({e})", file=sys.stderr)
+    # Push directly to Cloudflare D1 edge database
+    success = push_run(merged_run)
+    if not success:
+        print("Error: Failed to push benchmark run to Cloudflare D1", file=sys.stderr)
+        return 1
 
     for group_file in ["results-group1.json", "results-group2.json"]:
         path = SCRIPT_DIR / group_file

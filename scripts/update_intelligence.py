@@ -1,25 +1,14 @@
 #!/usr/bin/env python3
-"""Fetch and update model intelligence scores in history.db from Artificial Analysis."""
+"""Fetch and update model intelligence scores in Cloudflare D1 from Artificial Analysis."""
 
 import json
 import os
-import sqlite3
 import sys
 import urllib.request
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-HISTORY_DB = REPO_ROOT / "history.db"
-
-
-def init_db_schema(conn: sqlite3.Connection) -> None:
-    """Ensure the intelligence_score column exists in the models table."""
-    cursor = conn.execute("PRAGMA table_info(models)")
-    columns = [row[1] for row in cursor.fetchall()]
-    if "intelligence_score" not in columns:
-        print("Adding 'intelligence_score' column to 'models' table...")
-        conn.execute("ALTER TABLE models ADD COLUMN intelligence_score REAL DEFAULT NULL")
-        conn.commit()
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from push_run_to_d1 import escape_sql_string, execute_d1_sql, get_auth_token
 
 
 def fetch_intelligence_from_api(api_key: str) -> dict[str, float]:
@@ -120,61 +109,38 @@ def fuzzy_match_score(model_name: str, api_scores: dict[str, float]) -> float | 
 
 
 def main() -> int:
-    if not HISTORY_DB.exists():
-        print(f"Error: Database {HISTORY_DB} not found", file=sys.stderr)
+    token = get_auth_token()
+    if not token:
+        print("Error: No Cloudflare API token found for D1 update", file=sys.stderr)
         return 1
 
-    conn = sqlite3.connect(str(HISTORY_DB))
-    try:
-        init_db_schema(conn)
-        
-        # Check API Key
-        api_key = os.environ.get("ARTIFICIAL_ANALYSIS_API_KEY")
-        if not api_key:
-            print("Warning: ARTIFICIAL_ANALYSIS_API_KEY env var is missing. Skipping API fetch (resetting scores to NULL/N/A).")
-            
-        api_scores = fetch_intelligence_from_api(api_key) if api_key else {}
-        
-        # Query models
-        models = [row[0] for row in conn.execute("SELECT name FROM models").fetchall()]
-        
-        updated_count = 0
-        for model in models:
-            score = None
-            
-            # Try matching with API results if we have them
-            if api_scores:
-                score = fuzzy_match_score(model, api_scores)
-                
-            # Update database record (None -> NULL in SQLite)
-            conn.execute(
-                "UPDATE models SET intelligence_score = ? WHERE name = ?",
-                (score, model)
-            )
-            updated_count += 1
-            
-        conn.commit()
-        print(f"OK: Successfully updated intelligence scores for {updated_count} models in history.db")
+    # Check API Key
+    api_key = os.environ.get("ARTIFICIAL_ANALYSIS_API_KEY")
+    if not api_key:
+        print("Warning: ARTIFICIAL_ANALYSIS_API_KEY env var is missing. Skipping API fetch (resetting scores to NULL/N/A).")
 
-        # Also update Cloudflare D1 if credentials available
-        try:
-            from push_run_to_d1 import escape_sql_string, execute_d1_sql, get_auth_token
-            token = get_auth_token()
-            if token:
-                d1_stmts = []
-                for model in models:
-                    s = fuzzy_match_score(model, api_scores) if api_scores else None
-                    score_val = str(s) if s is not None else "NULL"
-                    d1_stmts.append(f"UPDATE models SET intelligence_score = {score_val} WHERE name = {escape_sql_string(model)};")
-                if d1_stmts:
-                    execute_d1_sql(" ".join(d1_stmts), token)
-                    print("OK: Successfully synced intelligence scores to Cloudflare D1")
-        except (OSError, RuntimeError) as e:
-            print(f"Note: Cloudflare D1 intelligence sync skipped ({e})")
-        
-    finally:
-        conn.close()
-        
+    api_scores = fetch_intelligence_from_api(api_key) if api_key else {}
+
+    # Query models directly from Cloudflare D1
+    try:
+        models_resp = execute_d1_sql("SELECT name FROM models ORDER BY name ASC;", token)
+        model_rows = models_resp.get("result", [{}])[0].get("results", [])
+        models = [r["name"] for r in model_rows]
+    except (OSError, RuntimeError, KeyError, IndexError) as e:
+        print(f"Warning: Failed to fetch models from D1 ({e}), falling back to test_models.ALL_MODELS")
+        from test_models import ALL_MODELS
+        models = ALL_MODELS
+
+    d1_stmts = []
+    for model in models:
+        s = fuzzy_match_score(model, api_scores) if api_scores else None
+        score_val = str(s) if s is not None else "NULL"
+        d1_stmts.append(f"UPDATE models SET intelligence_score = {score_val} WHERE name = {escape_sql_string(model)};")
+
+    if d1_stmts:
+        execute_d1_sql(" ".join(d1_stmts), token)
+        print(f"OK: Successfully updated intelligence scores for {len(models)} models on Cloudflare D1")
+
     return 0
 
 

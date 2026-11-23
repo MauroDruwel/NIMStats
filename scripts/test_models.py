@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from db_utils import write_run  # noqa: E402
+from push_run_to_d1 import push_run
 
 API_BASE = os.getenv("API_BASE", "https://integrate.api.nvidia.com/v1")
 API_KEY = os.getenv("NIM_API_KEY", "")
@@ -237,8 +237,11 @@ def compile_output(timestamp: str, prompt: str, models: list[dict[str, Any]]) ->
 
 
 def update_history(new_run: dict[str, Any]) -> None:
-    write_run(new_run)
-    print(f"History updated: {str(SCRIPT_DIR.parent / 'history.db')}")
+    success = push_run(new_run)
+    if success:
+        print("Cloudflare D1 updated with new run")
+    else:
+        print("Skipped Cloudflare D1 push (no credentials found)")
 
 
 def main() -> int:
