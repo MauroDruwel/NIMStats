@@ -122,6 +122,11 @@ html.light-theme .theme-icon-dark { display: block; }
 
 /* Main layout */
 main{max-width:1440px;margin:0 auto;padding:32px 32px}
+.benchmark-freshness{display:flex;align-items:center;gap:8px;margin-bottom:20px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);font-size:13px}
+.benchmark-freshness::before{content:'';width:7px;height:7px;flex:none;border-radius:50%;background:var(--text-dim)}
+.benchmark-freshness[data-state="fresh"]::before{background:var(--success)}
+.benchmark-freshness[data-state="stale"]::before{background:var(--warning)}
+.benchmark-freshness[data-state="unavailable"]::before{background:var(--danger)}
 section[data-tab]{display:none}
 section[data-tab].active{display:block}
 
@@ -261,6 +266,15 @@ td{padding:12px 20px;color:var(--text);vertical-align:middle}
 
 /* Compare */
 .compare-selectors{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:end;margin-bottom:24px}
+.fallback-card{margin-bottom:20px}
+.fallback-header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
+.fallback-header h2{font-size:16px;font-weight:600;margin-bottom:6px}
+.fallback-evidence,.fallback-feedback{font-size:13px;color:var(--text-dim);line-height:1.5;overflow-wrap:anywhere}
+.fallback-feedback:not(:empty){margin-top:8px}
+.fallback-copy,.fallback-json{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card2);color:var(--text);font:inherit}
+.fallback-copy{cursor:pointer}
+.fallback-copy:hover,.fallback-copy:focus-visible{border-color:var(--accent)}
+.fallback-json{width:100%;min-height:7em;margin-top:8px;resize:vertical;font-family:'JetBrains Mono',monospace;font-size:12px}
 .selector-group label{font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:8px}
 .swap-btn{background:var(--bg-card);border:1px solid var(--border-bright);color:var(--text-dim);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.25s;align-self:flex-end;flex-shrink:0}
 .swap-btn:hover{border-color:var(--accent);color:var(--accent);transform:rotate(180deg);background:var(--bg-hover)}

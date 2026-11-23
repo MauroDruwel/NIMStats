@@ -2,10 +2,10 @@
 """Manage models in the benchmark and database.
 
 Usage:
-  python scripts/manage_models.py list            # Show models in DB vs test_models.py
-  python scripts/manage_models.py add <model_id>  # Add a model to ALL_MODELS
-  python scripts/manage_models.py remove <model_id>  # Remove from ALL_MODELS + purge DB data
-  python scripts/manage_models.py purge            # Remove all DB models not in ALL_MODELS
+  python scripts/manage_models.py list              # Show configured and retired models
+  python scripts/manage_models.py add <model_id>    # Add a model to ALL_MODELS
+  python scripts/manage_models.py remove <model_id> # Retire a model and retain its history
+  python scripts/manage_models.py purge             # Delete all retired-model history from D1
 """
 
 import ast
@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from push_run_to_d1 import escape_sql_string, execute_d1_sql, get_auth_token
+from push_run_to_d1 import execute_d1_sql, get_auth_token
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 TEST_MODELS_FILE = SCRIPT_DIR / "test_models.py"
@@ -64,24 +64,18 @@ def cmd_list() -> int:
         print("Warning: No Cloudflare API token found to inspect D1.")
         return 0
 
-    resp = execute_d1_sql("SELECT name FROM models ORDER BY name;", token)
-    db_models = [r["name"] for r in resp.get("result", [{}])[0].get("results", [])]
+    response = execute_d1_sql(
+        "SELECT m.name, COUNT(mr.run_id) AS result_count FROM models m "
+        "LEFT JOIN model_results mr ON mr.model_id = m.id GROUP BY m.id ORDER BY m.name;",
+        token,
+    )
+    db_models = response.get("result", [{}])[0].get("results", [])
     print(f"\n=== Models in Cloudflare D1 ({len(db_models)}) ===")
-    for m in db_models:
-        in_cfg = "OK" if m in configured else "ORPHANED"
-        c_resp = execute_d1_sql(
-            f"SELECT COUNT(*) as count FROM model_results mr JOIN models m ON mr.model_id = m.id WHERE m.name = {escape_sql_string(m)};",
-            token,
-        )
-        count = c_resp.get("result", [{}])[0].get("results", [{}])[0].get("count", 0)
-        print(f"  {in_cfg:9} {m:50} {count} results")
-
-    orphans = [m for m in db_models if m not in configured]
-    if orphans:
-        print(f"\n{len(orphans)} orphaned model(s) in D1 not in test_models.py.")
-        print("Run 'python scripts/manage_models.py purge' to clean them up.")
-    else:
-        print("\nAll D1 models match test_models.py. Clean!")
+    configured_names = set(configured)
+    for row in db_models:
+        name = row["name"]
+        status = "ACTIVE" if name in configured_names else "RETIRED"
+        print(f"  {status:9} {name:50} {row['result_count']} results")
 
     return 0
 
@@ -103,35 +97,13 @@ def cmd_remove(model_id: str) -> int:
     models = _read_all_models()
     if model_id not in models:
         print(f"'{model_id}' is not in ALL_MODELS.")
-    else:
-        models.remove(model_id)
-        _write_all_models(models)
-        print(f"Removed '{model_id}' from ALL_MODELS ({len(models)} total).")
-        half = len(models) // 2 + len(models) % 2
-        print(f"Groups auto-balanced: group1={half}, group2={len(models) - half}.")
-
-    token = get_auth_token()
-    if not token:
-        print("Warning: No Cloudflare API token found; DB purge skipped in Cloudflare D1.")
         return 0
 
-    row_resp = execute_d1_sql(f"SELECT id FROM models WHERE name = {escape_sql_string(model_id)};", token)
-    results = row_resp.get("result", [{}])[0].get("results", [])
-    if not results:
-        print(f"'{model_id}' not found in Cloudflare D1 — nothing to purge.")
-        return 0
-
-    model_id_db = results[0]["id"]
-    count_resp = execute_d1_sql(f"SELECT COUNT(*) as count FROM model_results WHERE model_id = {model_id_db};", token)
-    count = count_resp.get("result", [{}])[0].get("results", [{}])[0].get("count", 0)
-
-    stmts = [
-        f"UPDATE runs SET fastest_model_id = NULL, fastest_time = NULL WHERE fastest_model_id = {model_id_db};",
-        f"DELETE FROM model_results WHERE model_id = {model_id_db};",
-        f"DELETE FROM models WHERE id = {model_id_db};",
-    ]
-    execute_d1_sql(" ".join(stmts), token)
-    print(f"Purged {count} model_results and removed '{model_id}' from Cloudflare D1.")
+    models.remove(model_id)
+    _write_all_models(models)
+    print(f"Retired '{model_id}' from ALL_MODELS ({len(models)} total). D1 history retained.")
+    half = len(models) // 2 + len(models) % 2
+    print(f"Groups auto-balanced: group1={half}, group2={len(models) - half}.")
     return 0
 
 
@@ -144,16 +116,16 @@ def cmd_purge() -> int:
 
     resp = execute_d1_sql("SELECT id, name FROM models ORDER BY name;", token)
     db_rows = resp.get("result", [{}])[0].get("results", [])
-    orphans = [r for r in db_rows if r["name"] not in configured]
+    retired = [r for r in db_rows if r["name"] not in configured]
 
-    if not orphans:
-        print("No orphaned models found in Cloudflare D1. D1 is clean!")
+    if not retired:
+        print("No retired models found in Cloudflare D1.")
         return 0
 
-    print(f"Found {len(orphans)} orphaned model(s) in Cloudflare D1:")
+    print(f"Found {len(retired)} retired model(s) in Cloudflare D1:")
     stmts = []
     total_results = 0
-    for r in orphans:
+    for r in retired:
         mid = r["id"]
         m = r["name"]
         c_resp = execute_d1_sql(f"SELECT COUNT(*) as count FROM model_results WHERE model_id = {mid};", token)
@@ -167,7 +139,7 @@ def cmd_purge() -> int:
     stmts.append("DELETE FROM errors WHERE id NOT IN (SELECT DISTINCT error_id FROM model_results WHERE error_id IS NOT NULL);")
     stmts.append("DELETE FROM prompts WHERE id NOT IN (SELECT DISTINCT prompt_id FROM runs);")
     execute_d1_sql(" ".join(stmts), token)
-    print(f"\nPurge complete: Removed {len(orphans)} orphaned models and {total_results} results from Cloudflare D1.")
+    print(f"\nPurge complete: Removed {len(retired)} retired models and {total_results} results from Cloudflare D1.")
     return 0
 
 

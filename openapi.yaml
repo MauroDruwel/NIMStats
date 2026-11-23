@@ -26,10 +26,16 @@ paths:
     get:
       summary: Health check endpoint
       operationId: getHealth
-      description: Returns health status, timestamp, and edge service name.
+      description: Checks whether D1 has a benchmark run with results from the last two hours.
       responses:
         '200':
-          description: Service is healthy
+          description: Benchmark data is fresh
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '503':
+          description: Benchmark data is stale or unavailable
           content:
             application/json:
               schema:
@@ -53,8 +59,16 @@ paths:
       summary: Historical benchmark runs
       operationId: getHistory
       description: >
-        Returns trailing benchmark runs and model intelligence scores queried from
-        Cloudflare D1 edge database with global CDN caching.
+        Returns recent benchmark runs and model intelligence scores from Cloudflare D1.
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of recent runs to return.
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 168
       responses:
         '200':
           description: Historical benchmark runs
@@ -62,6 +76,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HistoryData'
+        '400':
+          description: Invalid run limit
+        '503':
+          description: Benchmark history is unavailable
 
   /api/top:
     get:
@@ -234,9 +252,13 @@ components:
         - status
         - timestamp
         - service
+        - latest_complete_run_at
+        - age_seconds
+        - stale_after_seconds
       properties:
         status:
           type: string
+          enum: [ok, stale, unavailable]
           example: ok
         timestamp:
           type: string
@@ -245,6 +267,15 @@ components:
         service:
           type: string
           example: nimstats-edge
+        latest_complete_run_at:
+          type: [string, "null"]
+          format: date-time
+        age_seconds:
+          type: [integer, "null"]
+          minimum: 0
+        stale_after_seconds:
+          type: integer
+          example: 7200
 
     ModelsList:
       type: object

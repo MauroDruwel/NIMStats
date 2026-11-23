@@ -1,0 +1,24 @@
+name: Verify NIMStats
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Check benchmark and ingestion behavior
+        run: python3 -m unittest discover -s tests -v
+      - name: Check Pages API and regional probes
+        run: node --test tests/*.test.mjs probes/*.test.mjs
+      - name: Check dashboard translations
+        run: node scripts/check_i18n.js

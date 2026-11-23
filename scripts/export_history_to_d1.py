@@ -1,13 +1,16 @@
-#!/usr/bin/env python3
-"""Export history.db to a SQL file compatible with Cloudflare D1."""
+"""Export a SQLite snapshot for a new D1 database or a timestamped backfill."""
 
+import argparse
+import json
 import sqlite3
 import sys
+from datetime import datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HISTORY_DB = REPO_ROOT / "history.db"
 OUTPUT_SQL = REPO_ROOT / "scripts" / "d1_seed.sql"
+BACKFILL_SQL = REPO_ROOT / "scripts" / "d1_backfill.sql"
 
 
 def escape_str(val: str | None) -> str:
@@ -24,13 +27,69 @@ def escape_val(val) -> str:
     return escape_str(str(val))
 
 
-def main() -> int:
-    if not HISTORY_DB.exists():
-        print(f"Error: {HISTORY_DB} not found", file=sys.stderr)
-        return 1
+def write_backfill(conn: sqlite3.Connection, output: Path, after: str) -> None:
+    runs = conn.execute("""
+        SELECT r.id, r.timestamp, p.text, m.name, r.fastest_time
+        FROM runs r
+        JOIN prompts p ON p.id = r.prompt_id
+        LEFT JOIN models m ON m.id = r.fastest_model_id
+        WHERE r.timestamp > ?
+        ORDER BY r.timestamp, r.id
+    """, (after,)).fetchall()
+    conn.row_factory = sqlite3.Row
+    count = 0
+    with output.open("w", encoding="utf-8") as sql:
+        print("-- Requires scripts/d1_benchmark_ingestion.sql.", file=sql)
+        for run_id, timestamp, prompt, fastest, fastest_time in runs:
+            measurements = conn.execute("""
+                SELECT m.name AS model, mr.success, e.text AS error, mr.response_time AS responseTime,
+                       mr.tokens_generated AS tokensGenerated, mr.total_tokens AS totalTokens,
+                       mr.time_to_first_token AS timeToFirstToken
+                FROM model_results mr
+                JOIN models m ON m.id = mr.model_id
+                LEFT JOIN errors e ON e.id = mr.error_id
+                WHERE mr.run_id = ?
+                ORDER BY m.name
+            """, (run_id,)).fetchall()
+            if not measurements:
+                continue
+            values = (timestamp, prompt, fastest, fastest_time, json.dumps([dict(row) for row in measurements]))
+            print(
+                "INSERT INTO benchmark_ingest (run_timestamp, prompt_text, fastest_model, fastest_time, measurements) "
+                f"VALUES ({', '.join(escape_val(value) for value in values)});",
+                file=sql,
+            )
+            count += 1
+    print(f"Wrote {count} runs after {after} to {output}")
 
-    conn = sqlite3.connect(str(HISTORY_DB))
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", type=Path, default=HISTORY_DB)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--after", metavar="UTC_TIMESTAMP",
+                        help="Backfill runs after YYYY-MM-DDTHH:MM:SSZ using the D1 ingestion migration.")
+    options = parser.parse_args()
+    if options.after:
+        try:
+            cutoff = datetime.strptime(options.after, "%Y-%m-%dT%H:%M:%S%z")
+            if cutoff.strftime("%Y-%m-%dT%H:%M:%SZ") != options.after:
+                raise ValueError
+        except ValueError:
+            parser.error("--after requires YYYY-MM-DDTHH:MM:SSZ")
+    if not options.input.is_file():
+        print(f"Error: {options.input} not found", file=sys.stderr)
+        return 1
+    output = options.output or (BACKFILL_SQL if options.after else OUTPUT_SQL)
+    if options.input.resolve() == output.resolve():
+        parser.error("input and output must be different files")
+
+    conn = sqlite3.connect(options.input.resolve().as_uri() + "?mode=ro", uri=True)
     try:
+        if options.after:
+            write_backfill(conn, output, options.after)
+            return 0
+
         out_lines = [
             "-- Cloudflare D1 Seed Script generated from history.db",
             "PRAGMA foreign_keys = OFF;",
@@ -88,8 +147,8 @@ def main() -> int:
         out_lines.append("")
         out_lines.append("PRAGMA foreign_keys = ON;")
 
-        OUTPUT_SQL.write_text("\n".join(out_lines), encoding="utf-8")
-        print(f"✓ Wrote {len(out_lines)} SQL statements to {OUTPUT_SQL} ({OUTPUT_SQL.stat().st_size // 1024} KB)")
+        output.write_text("\n".join(out_lines), encoding="utf-8")
+        print(f"✓ Wrote {len(out_lines)} SQL statements to {output} ({output.stat().st_size // 1024} KB)")
 
     finally:
         conn.close()

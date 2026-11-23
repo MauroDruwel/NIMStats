@@ -235,12 +235,35 @@ function initLimitFilters() {
 }
 
 // ─── Initialization ───────────────────────────────────────────────────────────
+const STALE_AFTER_MS = 2 * 60 * 60 * 1000;
+let historyUnavailable = false;
+
+function updateBenchmarkFreshness() {
+  const label = document.getElementById('benchmark-freshness');
+  const timestamp = Date.parse(state.rawRuns.at(-1)?.timestamp);
+  let status = 'unknown';
+  let time;
+  if (historyUnavailable) {
+    status = 'unavailable';
+  } else if (Number.isFinite(timestamp)) {
+    status = Date.now() - timestamp >= STALE_AFTER_MS ? 'stale' : 'fresh';
+    time = new Intl.DateTimeFormat(window.getUiLocale(), {
+      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+    }).format(timestamp);
+  }
+
+  const message = t(`freshness.${status}`, { time });
+  label.dataset.state = status;
+  if (label.textContent !== message) label.textContent = message;
+}
+
 async function init() {
   try {
     initTheme();
+    updateBenchmarkFreshness();
 
     // Query trailing benchmark runs and model intelligence directly from Cloudflare D1 edge API
-    const apiRes = await fetch('/api/history');
+    const apiRes = await fetch('/api/history?limit=168');
     if (!apiRes.ok) {
       throw new Error(`Edge API responded with HTTP ${apiRes.status}`);
     }
@@ -273,6 +296,8 @@ async function init() {
 
     // Nav status
     updateNavStatus();
+    updateBenchmarkFreshness();
+    setInterval(updateBenchmarkFreshness, 60_000);
 
     // Populate selects
     populateExplorerSelect();
@@ -316,6 +341,8 @@ async function init() {
     applyLang();
 
   } catch (err) {
+    if (state.rawRuns.length === 0) historyUnavailable = true;
+    updateBenchmarkFreshness();
     document.getElementById('loading').style.display = 'none';
     document.getElementById('app').classList.add('visible');
     document.getElementById('error-state').style.display = 'flex';

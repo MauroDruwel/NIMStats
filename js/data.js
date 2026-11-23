@@ -106,3 +106,30 @@ function recomputeStats() {
   state.runs = runsSubset;
   state.modelStats = computeModelStats(state.runs, state.modelNames, state.modelIntel || {});
 }
+
+const MIN_FALLBACK_MATCHES = 5;
+
+function findModelFallback(runs, primary) {
+  const latest = runs.at(-1);
+  const candidates = new Map((latest?.models || [])
+    .filter(({ model }) => model !== primary)
+    .map(({ model }) => [model, { model, matched: 0, succeeded: 0 }]));
+
+  for (const { models } of runs) {
+    if (!models.some(result => result.model === primary && result.success === false)) continue;
+    for (const result of models) {
+      const candidate = candidates.get(result.model);
+      if (!candidate || typeof result.success !== 'boolean') continue;
+      candidate.matched++;
+      if (result.success) candidate.succeeded++;
+    }
+  }
+
+  const options = [...candidates.values()];
+  const recommendation = options
+    .filter(option => option.matched >= MIN_FALLBACK_MATCHES && option.succeeded > 0)
+    .sort((a, b) => (b.succeeded / b.matched) - (a.succeeded / a.matched)
+      || b.matched - a.matched || a.model.localeCompare(b.model))[0];
+  const mostMatches = Math.max(0, ...options.map(option => option.matched));
+  return { recommendation, mostMatches };
+}

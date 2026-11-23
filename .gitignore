@@ -43,5 +43,8 @@ history.db
 
 # Cloudflare D1 exports
 scripts/d1_seed.sql
+scripts/d1_backfill.sql
+.dev.vars
+.dev.vars.*
 .wrangler/
 

@@ -53,6 +53,7 @@
   </nav>
 
   <main>
+    <p class="benchmark-freshness" id="benchmark-freshness" data-state="unknown" role="status">Benchmark freshness unknown</p>
     <div id="error-state">
       <div class="err-icon">⚠️</div>
       <h2 data-i18n="error.title">加载基准测试数据失败</h2>
@@ -306,6 +307,17 @@
             </div>
           </div>
         </div>
+      </div>
+      <div class="card fallback-card" aria-labelledby="fallback-title">
+        <div class="fallback-header">
+          <div>
+            <h2 id="fallback-title" data-i18n="fallback.title">Suggested backup for model A</h2>
+            <p class="fallback-evidence" id="fallback-evidence"></p>
+          </div>
+          <button class="fallback-copy" id="fallback-copy" type="button" data-i18n="fallback.copy" hidden>Copy model pair</button>
+        </div>
+        <p class="fallback-feedback" id="fallback-feedback" role="status"></p>
+        <textarea class="fallback-json" id="fallback-json" readonly aria-labelledby="fallback-title" hidden></textarea>
       </div>
       <div class="chart-row chart-row-2" style="margin-bottom:20px">
         <div class="card">
