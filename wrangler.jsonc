@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nimstats",
+  "pages_build_output_dir": ".",
+  "compatibility_date": "2026-04-27",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nimstats-db",
+      "database_id": "f1f8a2eb-6359-4940-8eaf-7430a9654ff5"
+    }
+  ]
+}

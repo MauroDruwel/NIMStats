@@ -50,6 +50,7 @@ const state = {
   compareModelB: '',
   lbSort: { col: 'score', dir: 'desc' },
   lbFilter: '',
+  lbPreset: 'all',
   timelineFilter: 'all',
   limit: '50'
 };

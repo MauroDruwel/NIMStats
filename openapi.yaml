@@ -1,10 +1,11 @@
 openapi: 3.1.0
 info:
   title: NIMStats API
-  version: 1.0.0
+  version: 1.1.0
   description: >
     Real-time API endpoints for NVIDIA NIM benchmarks, rankings, response times,
-    and model metrics hosted on https://nimstats.maurodruwel.be.
+    reliability metrics, and composite scoring hosted on https://nimstats.maurodruwel.be.
+    Backed by Cloudflare D1 serverless SQLite at the edge.
   contact:
     name: Mauro Druwel
     url: https://github.com/MauroDruwel/NIMStats
@@ -15,17 +16,136 @@ info:
 servers:
   - url: https://nimstats.maurodruwel.be
     description: Production Cloudflare Pages Deployment
+  - url: https://nimstats.pages.dev
+    description: Cloudflare Pages Direct Domain
 
 security: []
 
 paths:
+  /api/health:
+    get:
+      summary: Health check endpoint
+      operationId: getHealth
+      description: Returns health status, timestamp, and edge service name.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  /api/models:
+    get:
+      summary: List all tracked models
+      operationId: getModels
+      description: Returns list of tracked NVIDIA NIM models with intelligence scores.
+      responses:
+        '200':
+          description: List of models
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelsList'
+
+  /api/history:
+    get:
+      summary: Historical benchmark runs
+      operationId: getHistory
+      description: >
+        Returns trailing benchmark runs and model intelligence scores queried from
+        Cloudflare D1 edge database with global CDN caching.
+      responses:
+        '200':
+          description: Historical benchmark runs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryData'
+
+  /api/top:
+    get:
+      summary: Query top models dynamically
+      operationId: getTopModelsQuery
+      description: >
+        Returns top models sorted dynamically by reliability, composite score, speed,
+        intelligence, or throughput over a trailing run window.
+      parameters:
+        - name: sort
+          in: query
+          description: Metric to sort models by.
+          required: false
+          schema:
+            type: string
+            enum: [reliability, uptime, composite, speed, latency, intelligence, tps, throughput]
+            default: reliability
+        - name: limit
+          in: query
+          description: Number of top models to return (1-50).
+          required: false
+          schema:
+            type: integer
+            default: 5
+            minimum: 1
+            maximum: 50
+        - name: window
+          in: query
+          description: Trailing runs evaluation window (10-500).
+          required: false
+          schema:
+            type: integer
+            default: 100
+            minimum: 10
+            maximum: 500
+      responses:
+        '200':
+          description: Ranked list of top models
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopModelsQueryResult'
+
+  /api/reliable:
+    get:
+      summary: Top 5 most reliable models
+      operationId: getTopReliableModels
+      description: >
+        Shortcut endpoint returning top reliable models (highest uptime and lowest error rate)
+        over the trailing evaluation window.
+      parameters:
+        - name: limit
+          in: query
+          description: Number of reliable models to return (1-50).
+          required: false
+          schema:
+            type: integer
+            default: 5
+            minimum: 1
+            maximum: 50
+        - name: window
+          in: query
+          description: Trailing runs evaluation window (10-500).
+          required: false
+          schema:
+            type: integer
+            default: 100
+            minimum: 10
+            maximum: 500
+      responses:
+        '200':
+          description: Top reliable models
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopModelsQueryResult'
+
   /top:
     get:
       summary: Get the top overall model (balanced score)
       operationId: getTopModel
       description: >
         Returns the top-ranked model using the balanced composite score:
-        reliability (30%) + intelligence (30%) + speed (20%) + throughput (20%).
+        reliability (25%) + intelligence (50%) + speed/throughput (25%).
       responses:
         '200':
           description: Top overall model details
@@ -108,6 +228,174 @@ paths:
 
 components:
   schemas:
+    HealthStatus:
+      type: object
+      required:
+        - status
+        - timestamp
+        - service
+      properties:
+        status:
+          type: string
+          example: ok
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-11-23T10:00:00Z'
+        service:
+          type: string
+          example: nimstats-edge
+
+    ModelsList:
+      type: object
+      required:
+        - models
+      properties:
+        models:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: integer
+                example: 1
+              name:
+                type: string
+                example: meta/llama-3.3-70b-instruct
+              intelligence_score:
+                type:
+                  - number
+                  - "null"
+                example: 78.5
+
+    HistoryData:
+      type: object
+      required:
+        - runs
+        - modelIntel
+      properties:
+        runs:
+          type: array
+          items:
+            type: object
+            properties:
+              _dbId:
+                type: integer
+              timestamp:
+                type: string
+                format: date-time
+              prompt:
+                type: string
+              models:
+                type: array
+                items:
+                  type: object
+              summary:
+                type: object
+        modelIntel:
+          type: object
+          additionalProperties:
+            type: number
+
+    TopModelsQueryResult:
+      type: object
+      required:
+        - sort
+        - limit
+        - window_runs
+        - timestamp
+        - models
+      properties:
+        sort:
+          type: string
+          example: reliability
+        limit:
+          type: integer
+          example: 5
+        window_runs:
+          type: integer
+          example: 100
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-11-23T10:00:00Z'
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelRankingEntry'
+
+    ModelRankingEntry:
+      type: object
+      required:
+        - rank
+        - model
+        - uptime
+        - uptime_pct
+        - error_rate
+        - error_rate_pct
+        - intelligence
+        - composite_score
+        - total_tests
+        - successful_tests
+        - failed_tests
+      properties:
+        rank:
+          type: integer
+          example: 1
+        model:
+          type: string
+          example: nvidia/nemotron-3-nano-omni-30b-a3b-reasoning
+        uptime:
+          type: number
+          example: 0.99
+        uptime_pct:
+          type: string
+          example: "99.0%"
+        error_rate:
+          type: number
+          example: 0.01
+        error_rate_pct:
+          type: string
+          example: "1.0%"
+        avg_time_ms:
+          type:
+            - number
+            - "null"
+          example: 6428.8
+        best_time_ms:
+          type:
+            - number
+            - "null"
+          example: 2702
+        avg_ttft_ms:
+          type:
+            - number
+            - "null"
+          example: 1936.1
+        avg_tps:
+          type:
+            - number
+            - "null"
+          example: 106.0
+        intelligence:
+          type: number
+          example: 50.0
+        composite_score:
+          type: integer
+          example: 85
+        total_tests:
+          type: integer
+          example: 100
+        successful_tests:
+          type: integer
+          example: 99
+        failed_tests:
+          type: integer
+          example: 1
+
     TopModel:
       type: object
       required:

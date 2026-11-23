@@ -152,7 +152,14 @@ section[data-tab].active{display:block}
 .chart-wrap-lg{position:relative;height:280px}
 
 /* Reliability pills */
-.reliability-grid{display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
+.reliability-grid{display:flex;flex-direction:column;align-content:flex-start}
+.rel-top5-list{display:flex;flex-direction:column;gap:6px;width:100%;margin-bottom:8px}
+.rel-top5-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:var(--bg-card2);border:1px solid var(--border);transition:all 0.2s ease}
+.rel-top5-item:hover{background:var(--bg-hover);border-color:var(--accent)}
+.rel-medal{font-size:14px;flex-shrink:0}
+.rel-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rel-divider{width:100%;height:1px;background:var(--border);margin:4px 0 8px 0}
+.rel-others-grid{display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;width:100%}
 .rel-pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid transparent;transition:all 0.2s;cursor:default}
 .rel-pill.green{background:var(--success-dim);border-color:rgba(129,201,149,0.2);color:var(--success)}
 .rel-pill.yellow{background:rgba(253,214,99,0.08);border-color:rgba(253,214,99,0.15);color:var(--warning)}

@@ -132,7 +132,13 @@ function computeModelStats(runs, modelNames, modelIntel) {
       ? ((s.avgTps - minTps) / Math.max(maxTps - minTps, 1)) * 100 : 0;
     s.speedScore = speedScore;
     s.tpsScore = tpsScore;
-    s.score = Math.round(s.uptime * 30 + speedScore * 0.2 + tpsScore * 0.2 + (s.intelligence / 100) * 30);
+
+    // Composite Ranking (Issue #66): 50% Intelligence, 25% Speed, 25% Reliability
+    const intelScore = s.intelligence != null ? s.intelligence : 50;
+    const combinedSpeedScore = (speedScore * 0.6) + (tpsScore * 0.4);
+    const reliabilityScore = s.uptime * 100;
+    s.compositeScore = Math.round((intelScore * 0.50) + (combinedSpeedScore * 0.25) + (reliabilityScore * 0.25));
+    s.score = s.compositeScore;
 
     const half = Math.floor(s.responseTimes.length / 2);
     const firstHalf = s.responseTimes.slice(0, half).filter(v => v != null);

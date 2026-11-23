@@ -175,14 +175,45 @@ function renderOverview() {
     }
   });
 
-  // Reliability pills
+  // Reliability section with Top 5 Reliable highlights
   const grid = document.getElementById('reliability-grid');
   const sorted = [...modelNames].sort((a, b) => modelStats[b].uptime - modelStats[a].uptime);
-  grid.innerHTML = sorted.map(m => {
+  const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+  const top5 = sorted.slice(0, 5);
+  const others = sorted.slice(5);
+
+  let html = '<div class="rel-top5-list">';
+  top5.forEach((m, idx) => {
     const u = modelStats[m].uptime;
     const cls = u >= 0.7 ? 'green' : u >= 0.4 ? 'yellow' : 'red';
-    return `<div class="rel-pill ${cls}"><span class="dot"></span>${shortModel(m)} <span style="opacity:0.7">${(u*100).toFixed(0)}%</span></div>`;
-  }).join('');
+    html += `<div class="rel-top5-item" data-model="${m}" style="cursor:pointer" title="${m}">
+      <span class="rel-medal">${medals[idx]}</span>
+      <span class="rel-name">${shortModel(m)}</span>
+      <div class="rel-pill ${cls}" style="margin-left:auto"><span class="dot"></span>${(u*100).toFixed(0)}%</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  if (others.length) {
+    html += '<div class="rel-divider"></div><div class="rel-others-grid">';
+    others.forEach(m => {
+      const u = modelStats[m].uptime;
+      const cls = u >= 0.7 ? 'green' : u >= 0.4 ? 'yellow' : 'red';
+      html += `<div class="rel-pill ${cls}" data-model="${m}" style="cursor:pointer"><span class="dot"></span>${shortModel(m)} <span style="opacity:0.7">${(u*100).toFixed(0)}%</span></div>`;
+    });
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('[data-model]').forEach(el => {
+    el.addEventListener('click', () => {
+      const m = el.dataset.model;
+      if (m) {
+        state.explorerModel = m;
+        switchTab('explorer');
+      }
+    });
+  });
 
   // Intelligence Bar Chart (Horizontal)
   const modelsWithIntel = [...modelNames]
@@ -312,7 +343,7 @@ function renderLeaderboard() {
 }
 
 function renderLbTable() {
-  const { lbData, lbSort, lbFilter } = state;
+  const { lbData, lbSort, lbFilter, lbPreset } = state;
   if (!lbData) return;
 
   let rows = [...lbData];
@@ -320,12 +351,23 @@ function renderLbTable() {
     rows = rows.filter(r => r.model.toLowerCase().includes(lbFilter.toLowerCase()));
   }
 
-  rows.sort((a, b) => {
-    let av = a[lbSort.col], bv = b[lbSort.col];
-    if (av == null) av = lbSort.dir === 'asc' ? Infinity : -Infinity;
-    if (bv == null) bv = lbSort.dir === 'asc' ? Infinity : -Infinity;
-    return lbSort.dir === 'asc' ? av - bv : bv - av;
-  });
+  if (lbPreset === 'top5-reliable') {
+    rows.sort((a, b) => b.uptime - a.uptime || (a.avgTime ?? Infinity) - (b.avgTime ?? Infinity));
+    rows = rows.slice(0, 5);
+  } else if (lbPreset === 'top5-composite') {
+    rows.sort((a, b) => b.score - a.score || b.uptime - a.uptime);
+    rows = rows.slice(0, 5);
+  } else if (lbPreset === 'top5-fastest') {
+    rows.sort((a, b) => (a.avgTime ?? Infinity) - (b.avgTime ?? Infinity));
+    rows = rows.slice(0, 5);
+  } else {
+    rows.sort((a, b) => {
+      let av = a[lbSort.col], bv = b[lbSort.col];
+      if (av == null) av = lbSort.dir === 'asc' ? Infinity : -Infinity;
+      if (bv == null) bv = lbSort.dir === 'asc' ? Infinity : -Infinity;
+      return lbSort.dir === 'asc' ? av - bv : bv - av;
+    });
+  }
 
   const tbody = document.getElementById('lb-body');
   tbody.innerHTML = rows.map((r, i) => {
@@ -386,6 +428,19 @@ function initLeaderboardSort() {
   document.getElementById('lb-search').addEventListener('input', e => {
     state.lbFilter = e.target.value;
     renderLbTable();
+  });
+}
+
+function initLeaderboardPresets() {
+  const container = document.getElementById('lb-preset-filters');
+  if (!container) return;
+  container.querySelectorAll('button[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('button[data-preset]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.lbPreset = btn.dataset.preset;
+      renderLbTable();
+    });
   });
 }
 

@@ -294,8 +294,9 @@ async function init() {
     populateExplorerSelect();
     populateCompareSelects();
 
-    // Init leaderboard sort
+    // Init leaderboard sort & presets
     initLeaderboardSort();
+    initLeaderboardPresets();
 
     // Limit filters
     initLimitFilters();

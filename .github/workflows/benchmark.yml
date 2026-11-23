@@ -64,6 +64,10 @@ jobs:
           path: scripts/
       
       - name: Merge results and update history
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '879f04f8f58e18fb6de847adee291172' }}
+          CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID || 'f1f8a2eb-6359-4940-8eaf-7430a9654ff5' }}
         run: |
           mv scripts/results-group1/results.json scripts/results-group1.json || true
           mv scripts/results-group2/results.json scripts/results-group2.json || true
@@ -73,6 +77,9 @@ jobs:
       - name: Fetch and update Artificial Analysis intelligence scores
         env:
           ARTIFICIAL_ANALYSIS_API_KEY: ${{ secrets.ARTIFICIAL_ANALYSIS_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '879f04f8f58e18fb6de847adee291172' }}
+          CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID || 'f1f8a2eb-6359-4940-8eaf-7430a9654ff5' }}
         run: python3 scripts/update_intelligence.py
 
       - name: Generate top model endpoint
@@ -82,7 +89,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add history.db top/
+          git add top/
+          if [ -f history.db ]; then git add history.db; fi
           if ! git diff --cached --quiet; then
             git commit -m "Update benchmark results"
             git push
