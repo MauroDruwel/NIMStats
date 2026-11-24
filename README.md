@@ -4,14 +4,14 @@
 
 [![CI](https://github.com/MauroDruwel/NIMStats/actions/workflows/benchmark.yml/badge.svg)](https://github.com/MauroDruwel/NIMStats/actions)
 [![Live Dashboard](https://img.shields.io/badge/🌐%20live-nimstats.maurodruwel.be-76b900?style=flat-square)](https://nimstats.maurodruwel.be/)
-[![Models](https://img.shields.io/badge/models-22-blue?style=flat-square)](https://build.nvidia.com/models)
+[![NVIDIA Model Catalog](https://img.shields.io/badge/NVIDIA-model_catalog-blue?style=flat-square)](https://build.nvidia.com/models)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/MauroDruwel/NIMStats/pulls)
 [![Stars](https://img.shields.io/github/stars/MauroDruwel/NIMStats?style=flat-square&color=gold)](https://github.com/MauroDruwel/NIMStats/stargazers)
 
 <br/>
 
-> **Community-driven benchmarking of 22 NVIDIA NIM models — fully automated, zero infra cost, self-hostable in minutes.**
+> **Community-driven benchmarks for NVIDIA NIM models, with public reliability, latency, and throughput data.**
 
 <br/>
 
@@ -23,13 +23,13 @@
 
 ## ✨ What is NIMStats?
 
-NIMStats automatically benchmarks **22 NVIDIA NIM models** every hour using GitHub Actions and publishes the results to a beautiful, interactive dashboard. No servers, no subscriptions — just fork, add your API key, and go.
+NIMStats runs hourly NVIDIA NIM benchmarks through GitHub Actions and stores the results in Cloudflare D1. The dashboard uses Cloudflare Pages Functions to read this shared history.
 
 <div align="center">
 
-| 🏎️ Hourly Benchmarks | 📊 Interactive Charts | 🔁 Zero Infrastructure | 🌍 Fully Open-Source |
+| 🏎️ Hourly Benchmarks | 📊 Interactive Charts | 🔁 Cloudflare D1 | 🌍 Fully Open-Source |
 |:---:|:---:|:---:|:---:|
-| Automatic via GitHub Actions | Response time, throughput & trends | Static site + free CI/CD | Fork and self-host in minutes |
+| GitHub Actions | Response time, throughput & trends | Shared benchmark history | Fork and run your own probes |
 
 </div>
 
@@ -37,40 +37,40 @@ NIMStats automatically benchmarks **22 NVIDIA NIM models** every hour using GitH
 
 ## ⚡ Quick Start
 
-> Get your own benchmarking dashboard running in under 5 minutes.
-
-### 1. Fork & Clone
+### 1. Fork and clone
 
 ```bash
-git clone https://github.com/MauroDruwel/NIMStats.git
+git clone https://github.com/YOUR_ACCOUNT/NIMStats.git
 cd NIMStats
 ```
 
-### 2. Get a Free API Key
+Get an NVIDIA NIM API key for the benchmark runner. [NVIDIA Build](https://build.nvidia.com)
 
-Visit **[build.nvidia.com](https://build.nvidia.com)** → Create a free account → Copy your API key.
+### 2. Set up Cloudflare Pages and D1
 
-### 3. Add the Secret
+Create a D1 database named `nimstats-db` in your account and update the project name and database ID in [`wrangler.jsonc`](wrangler.jsonc). Connect the repository to a Cloudflare Pages project. Use the repository's default branch for production and bind the same D1 database as `DB` for production and branch previews. Both dashboards read the same results through their Pages Functions. [Cloudflare Pages bindings](https://developers.cloudflare.com/pages/functions/bindings/#d1-databases)
 
-In your forked repo: **Settings → Secrets and variables → Actions → New repository secret**
+For a new database, apply the base schema and then the benchmark ingestion migration. For an existing NIMStats D1 database, apply only the additive migration. It leaves existing measurements in place. [Wrangler D1 commands](https://developers.cloudflare.com/d1/wrangler-commands/)
 
-| Name | Value |
-|------|-------|
-| `NIM_API_KEY` | Your NVIDIA NIM API key |
+```bash
+# New databases only
+npx wrangler d1 execute nimstats-db --remote --file=scripts/d1_schema.sql
 
-### 4. Deploy the Dashboard
+# New and existing databases
+npx wrangler d1 execute nimstats-db --remote --file=scripts/d1_benchmark_ingestion.sql
+```
 
-| Platform | Steps |
-|----------|-------|
-| **Cloudflare Pages** | Connect repo → auto-deploys on every push to `main` |
-| **GitHub Pages** | Settings → Pages → Deploy from `main` |
-| **Netlify / Vercel** | Connect repo for instant auto-deploy |
+### 3. Configure GitHub Actions
 
-### 5. Run Your First Benchmark
+- Add `NIM_API_KEY` as a repository Actions secret. `ARTIFICIAL_ANALYSIS_API_KEY` is optional and enables intelligence score updates.
+- Set `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_D1_DATABASE_ID` as repository Actions variables for your account and database.
+- Create the GitHub environment `nimstats-production` and restrict deployment branches to your repository's default branch. Add `CLOUDFLARE_API_TOKEN` **as an environment secret**, using the **D1 Edit** permission for the account hosting the database. [GitHub environment settings](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments) · [Create a D1 API token](https://developers.cloudflare.com/d1/tutorials/import-to-d1-with-rest-api/#1-create-a-d1-api-token)
 
-**Actions → Benchmark NVIDIA NIM Models → Run workflow**
+### 4. Run the benchmark
 
-That's it — your dashboard auto-refreshes every hour. ✨
+Select the default branch in **Actions → Benchmark NVIDIA NIM Models → Run workflow**. The preflight job checks the secrets and ingestion migration before the benchmark jobs run. Both preflight and D1 ingestion are gated to the default branch. The production write token is available to the protected environment jobs, and all Pages dashboard endpoints are read-only.
+
+The workflow uses `workflow_dispatch`. To reproduce the hosted hourly cadence, configure a scheduler to dispatch it on the default branch. After the first completed run, check `/api/health` on the public dashboard for the latest benchmark timestamp.
 
 ---
 
@@ -84,18 +84,24 @@ That's it — your dashboard auto-refreshes every hour. ✨
 | **🏆 Leaderboard** | Composite score rankings · sortable columns · SVG sparklines · trend indicators (↑↓→) · provider chips |
 | **🔬 Explorer** | Per-model deep dive · response time history chart · error breakdown donut · availability heatmap |
 | **⏱ Timeline** | Filterable run history (All / 24h / 48h / 7d) · expandable run cards with full per-model detail |
-| **⚔️ Compare** | Head-to-head overlay chart · win-rate stats · side-by-side metric comparison |
-| **🔗 Public APIs** | Multiple category endpoints: `/top` (balanced), `/top/speed` (speed & tps), and `/top/intelligence` (capabilities) in both JSON and raw `.txt` formats. Perfect for integration with local scripts, scripts, or apps |
+| **⚔️ Compare** | Head-to-head overlay chart · win-rate stats · side-by-side metric comparison · copyable backup suggestion based on matched runs |
+| **🔗 Public APIs** | D1-backed history and rankings, plus compatibility ranking endpoints in JSON and plain text |
 
 </div>
+
+Every tab shows the latest benchmark timestamp and whether the data is current, stale, unavailable, or of unknown freshness. Data is marked stale after two hours. The dashboard requests up to 168 recent runs for its seven-day Timeline view.
+
+The Compare tab suggests a backup for model A from models tested in the latest run. It uses the selected run window and counts only runs where model A failed and both models were tested. A suggestion requires at least five such matches and one observed backup success. The copy button exports the full model IDs as a JSON pair.
 
 ---
 
 ## 🔌 Developer APIs
 
-NIMStats exposes lightweight, static API endpoints for querying the #1 model in different performance categories. Every time the hourly benchmark completes, these endpoints are updated.
+The D1-backed endpoints include `/api/health`, `/api/history`, `/api/models`, `/api/top`, and `/api/reliable`. The OpenAPI documents describe request options and response fields. [OpenAPI YAML](openapi.yaml) · [OpenAPI JSON](openapi.json)
 
-### Available Endpoints
+### Compatibility ranking endpoints
+
+The workflow generates lightweight snapshots of the best models by category after each published run.
 
 | Category | Endpoint (JSON) | Endpoint (Plain Text) | Scoring Balance |
 | :--- | :--- | :--- | :--- |
@@ -128,95 +134,46 @@ NIMStats exposes lightweight, static API endpoints for querying the #1 model in 
 
 ## 🤖 Benchmarked Models
 
-<details>
-<summary><b>22 models across 11 providers — click to expand</b></summary>
-
-<br/>
-
-| Provider | Model | Highlight |
-|----------|-------|-----------|
-| **DeepSeek** | `deepseek-ai/deepseek-v4-flash` | Fast MoE, optimized for speed |
-| **DeepSeek** | `deepseek-ai/deepseek-v4-pro` | Professional-grade reasoning |
-| **Z-AI** | `z-ai/glm-5.2` | Superior code understanding |
-| **MiniMax** | `minimaxai/minimax-m2.7` | Efficient inference model |
-| **MiniMax** | `minimaxai/minimax-m3` | Latest MiniMax generation |
-| **NVIDIA** | `nvidia/nemotron-3-super-120b-a12b` | NVIDIA's 120B flagship |
-| **NVIDIA** | `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` | Compact omni reasoning model |
-| **NVIDIA** | `nvidia/llama-3.3-nemotron-super-49b-v1.5` | Nemotron Super 49B v1.5 |
-| **Moonshot** | `moonshotai/kimi-k2.6` | Context-optimized model |
-| **OpenAI** | `openai/gpt-oss-120b` | Open-source 120B |
-| **Google** | `google/gemma-4-31b-it` | Lightweight edge inference |
-| **Qwen** | `qwen/qwen3.5-397b-a17b` | Flagship Qwen (397B) |
-| **Qwen** | `qwen/qwen3.5-122b-a10b` | Mid-range Qwen 3.5 MoE |
-| **Qwen** | `qwen/qwen3-next-80b-a3b-instruct` | Next-gen Qwen (80B MoE) |
-| **Mistral** | `mistralai/mistral-large-3-675b-instruct-2512` | Largest Mistral (675B) |
-| **Mistral** | `mistralai/mistral-medium-3.5-128b` | Efficient medium-scale Mistral |
-| **Mistral** | `mistralai/mistral-small-4-119b-2603` | Mistral Small 4 (119B) |
-| **Meta** | `meta/llama-3.3-70b-instruct` | Llama 3.3 70B |
-| **Meta** | `meta/llama-4-maverick-17b-128e-instruct` | Llama 4 Maverick (128 experts) |
-| **Meta** | `meta/llama-3.2-90b-vision-instruct` | Multimodal 90B vision model |
-| **StepFun** | `stepfun-ai/step-3.5-flash` | Ultra-fast flash model |
-| **StepFun** | `stepfun-ai/step-3.7-flash` | Latest high-performance flash |
-
-</details>
+The active roster is `ALL_MODELS` in [`scripts/test_models.py`](scripts/test_models.py). The daily model sync proposes roster changes as GitHub pull requests. When a model leaves the roster, its earlier results stay in D1 until the regular retention window expires.
 
 ---
 
 ## 🏗️ How It Works
 
-````
-┌──────────────────── GitHub Actions (every hour) ──────────────────────┐
-│                                                                       │
-│   ┌─────────────────────┐        ┌─────────────────────┐              │
-│   │  Job 1 — Group A    │        │  Job 2 — Group B    │ (parallel)   │
-│   │  N/2 NIM models     │        │  N/2 NIM models     │              │
-│   └──────────┬──────────┘        └──────────┬──────────┘              │
-│              └──────────────┬───────────────┘                         │
-│                    ┌────────▼────────┐                                │
-│                    │  Merge + commit │ → history.db committed to repo │
-│                    └─────────────────┘                                │
-└───────────────────────────────────────────────────────────────────────┘
-                              │
-                   ┌──────────▼───────────┐
-                   │  Cloudflare Pages    │ → auto-deploys on push
-                   │  (static dashboard)  │   index.html + history.db
-                   └──────────────────────┘
-````
+Two parallel GitHub Actions jobs collect measurements for different halves of the model roster. The protected default-branch job combines both artifacts and publishes the complete run to D1. Cloudflare Pages Functions serve the same history to production and preview deployments.
 
-**Parallel jobs = ~50% faster benchmarks** ⚡
+The regional pilot supports local mock runs and an opt-in manual deployment. It produces independent observations for offline comparison. [Regional probe pilot](probes/README.md)
 
 ---
 
 ## 🛠️ Customization
 
 <details>
-<summary><b>Change the benchmark prompt</b></summary>
+<summary><b>Change a benchmark prompt</b></summary>
 
-Edit `PROMPT` in `scripts/test_models.py`:
-```python
-PROMPT = "Your custom prompt here"
-```
+Edit the corresponding profile in `PROFILE_PROMPTS` in `scripts/test_models.py`. The hourly workflow uses the default `code` profile.
+
 </details>
 
 <details>
 <summary><b>Add or remove models</b></summary>
 
-Use the model management script:
+Use the model management script.
+
 ```bash
-# List models in DB vs test_models.py
+# List the configured roster and any retired models with history in D1
 python scripts/manage_models.py list
 
 # Add a new model to ALL_MODELS
 python scripts/manage_models.py add your/custom-model
 
-# Remove a model from ALL_MODELS and purge its data from history.db
+# Retire a model from future runs and keep its D1 history
 python scripts/manage_models.py remove your/custom-model
-
-# Purge all DB models not in ALL_MODELS
-python scripts/manage_models.py purge
 ```
 
-Or manually edit `ALL_MODELS` in `scripts/test_models.py`:
+The explicit maintenance command `python scripts/manage_models.py purge` deletes history for every model outside the roster in the targeted D1 database. Normal roster updates use `remove`.
+
+You can also manually edit `ALL_MODELS` in `scripts/test_models.py`.
 ```python
 ALL_MODELS = [
     "your/custom-model",
@@ -226,75 +183,48 @@ ALL_MODELS = [
 </details>
 
 <details>
-<summary><b>Change the schedule</b></summary>
+<summary><b>Run benchmark profiles locally</b></summary>
 
-Edit `.github/workflows/benchmark.yml`:
-```yaml
-- cron: '0 */6 * * *'  # Every 6 hours instead of every hour
+With `NIM_API_KEY` set in your shell, select a workload profile. These commands collect results into JSON files under `scripts/` and leave the shared D1 database untouched.
+
+```bash
+python3 scripts/test_models.py --profile code
+python3 scripts/test_models.py --profile json
+python3 scripts/test_models.py --profile tool
 ```
+
+`code` uses the standard coding prompt. `json` checks a structured answer, and `tool` checks the expected tool call and arguments. The profile reports are independent workloads.
+
 </details>
 
 <details>
-<summary><b>Run locally</b></summary>
+<summary><b>Run the dashboard locally</b></summary>
+
+Start Pages Functions with Wrangler and use a local D1 database. The dashboard displays an unavailable state until the local database contains data.
 
 ```bash
-# Serve the dashboard
-python3 -m http.server 8000
-# Open http://localhost:8000
-
-# Run benchmarks manually (requires NIM_API_KEY env var)
-export NIM_API_KEY=your_key_here
-python3 scripts/test_models.py
+npx wrangler d1 execute nimstats-db --local --file=scripts/d1_schema.sql
+npx wrangler d1 execute nimstats-db --local --file=scripts/d1_benchmark_ingestion.sql
+npx wrangler pages dev .
 ```
+
 </details>
 
 ---
 
 ## 📦 Data Storage
 
-`history.db` is a SQLite database persisted in the repo — the single source of truth. The browser loads it via [sql.js](https://sql.js.org/) (WebAssembly) and queries it entirely client-side. `scripts/results.json` is a temporary per-job artifact that is never committed.
+Cloudflare D1 stores benchmark runs and per-model results. The base schema defines the tables. The additive ingestion migration publishes each complete run in one statement and retains the latest 720 runs. Per-job benchmark JSON files are temporary artifacts. [Base schema](scripts/d1_schema.sql) · [Ingestion migration](scripts/d1_benchmark_ingestion.sql)
 
-**Schema Architecture:**
+The scheduled freshness check fails when the production API reports stale or unavailable benchmark data. The health response includes the latest run timestamp and its age.
 
-```sql
-CREATE TABLE prompts (
-  id INTEGER PRIMARY KEY,
-  text TEXT UNIQUE
-);
+To recover results from a legacy snapshot, read the latest D1 timestamp from `/api/health` and pass it as `--after`. The export only creates a SQL file. It uses timestamps and model names so repeated imports preserve existing measurements.
 
-CREATE TABLE models (
-  id INTEGER PRIMARY KEY,
-  name TEXT UNIQUE,
-  intelligence_score REAL DEFAULT NULL
-);
-
-CREATE TABLE errors (
-  id INTEGER PRIMARY KEY,
-  text TEXT UNIQUE
-);
-
-CREATE TABLE runs (
-  id INTEGER PRIMARY KEY,
-  timestamp TEXT NOT NULL,
-  prompt_id INTEGER REFERENCES prompts(id),
-  fastest_model_id INTEGER REFERENCES models(id),
-  fastest_time INTEGER
-);
-
-CREATE TABLE model_results (
-  run_id INTEGER REFERENCES runs(id),
-  model_id INTEGER REFERENCES models(id),
-  success INTEGER NOT NULL,
-  error_id INTEGER REFERENCES errors(id),
-  response_time INTEGER,
-  tokens_generated INTEGER,
-  total_tokens INTEGER,
-  time_to_first_token INTEGER,
-  PRIMARY KEY (run_id, model_id)
-);
+```bash
+python3 scripts/export_history_to_d1.py --input history.db --after "$LATEST_D1_TIMESTAMP"
 ```
 
-**Benchmark parameters (default):** `temperature: 0.7` · `top_p: 0.9` · `max_tokens: 500` · OpenAI-compatible API. GLM-5.3 variants use `reasoning_effort: low` and `max_tokens: 2048` because thinking is always enabled.
+**Default code profile parameters** · `temperature: 0.7` · `top_p: 0.9` · `max_tokens: 500` · OpenAI-compatible API. GLM-5.3 variants use `reasoning_effort: low` and `max_tokens: 2048` because thinking is always enabled.
 
 ---
 
@@ -324,7 +254,7 @@ Please read through open [Issues](https://github.com/MauroDruwel/NIMStats/issues
 - [NVIDIA NIM API Documentation](https://docs.api.nvidia.com/nim/)
 - [NVIDIA Model Catalog](https://build.nvidia.com/models)
 - [GitHub Actions Docs](https://docs.github.com/en/actions)
-- [sql.js — SQLite in the browser](https://sql.js.org/)
+- [Cloudflare D1 Documentation](https://developers.cloudflare.com/d1/)
 
 ---
 

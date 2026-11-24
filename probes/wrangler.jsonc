@@ -1,0 +1,29 @@
+{
+  "name": "nimstats-regional-probe",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "env": {
+    "na": {
+      "name": "nimstats-regional-probe-na",
+      "placement": { "region": "aws:us-east-1" },
+      "vars": { "PROBE_REGION": "na", "PROBE_ENABLED": "false" },
+      "secrets": { "required": ["PROBE_SIGNING_KEY", "NIM_API_KEY"] }
+    },
+    "eu": {
+      "name": "nimstats-regional-probe-eu",
+      "placement": { "region": "gcp:europe-west1" },
+      "vars": { "PROBE_REGION": "eu", "PROBE_ENABLED": "false" },
+      "secrets": { "required": ["PROBE_SIGNING_KEY", "NIM_API_KEY"] }
+    },
+    "apac": {
+      "name": "nimstats-regional-probe-apac",
+      "placement": { "region": "aws:ap-southeast-1" },
+      "vars": { "PROBE_REGION": "apac", "PROBE_ENABLED": "false" },
+      "secrets": { "required": ["PROBE_SIGNING_KEY", "NIM_API_KEY"] }
+    }
+  }
+}

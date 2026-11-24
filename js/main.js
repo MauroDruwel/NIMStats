@@ -23,7 +23,7 @@ function createCustomDropdown(containerId, options, activeValue, onChangeCallbac
     triggerContent.innerHTML = `
       ${providerChip(val, true)}
       <span style="font-weight:600;font-size:13px">${short}</span>
-      <span style="font-size:10px;font-weight:700;background:var(--bg-card2);padding:1px 5px;border-radius:4px;color:${scoreColor};font-family:'JetBrains Mono'">评分：${score}</span>
+      <span style="font-size:10px;font-weight:700;background:var(--bg-card2);padding:1px 5px;border-radius:4px;color:${scoreColor};font-family:'JetBrains Mono'">${t('dropdown.score', { score })}</span>
     `;
   }
 
@@ -235,35 +235,42 @@ function initLimitFilters() {
 }
 
 // ─── Initialization ───────────────────────────────────────────────────────────
+const STALE_AFTER_MS = 2 * 60 * 60 * 1000;
+let historyUnavailable = false;
+
+function updateBenchmarkFreshness() {
+  const label = document.getElementById('benchmark-freshness');
+  const timestamp = Date.parse(state.rawRuns.at(-1)?.timestamp);
+  let status = 'unknown';
+  let time;
+  if (historyUnavailable) {
+    status = 'unavailable';
+  } else if (Number.isFinite(timestamp)) {
+    status = Date.now() - timestamp >= STALE_AFTER_MS ? 'stale' : 'fresh';
+    time = new Intl.DateTimeFormat(window.getUiLocale(), {
+      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+    }).format(timestamp);
+  }
+
+  const message = t(`freshness.${status}`, { time });
+  label.dataset.state = status;
+  if (label.textContent !== message) label.textContent = message;
+}
+
 async function init() {
   try {
     initTheme();
+    updateBenchmarkFreshness();
 
-    // 1. Attempt fast edge API load first (Cloudflare D1, no WASM / no DB download)
-    let data = null;
-    try {
-      const apiRes = await fetch('/api/history');
-      if (apiRes.ok) {
-        const json = await apiRes.json();
-        if (json && Array.isArray(json.runs) && json.runs.length > 0) {
-          data = json;
-        }
-      }
-    } catch (_) {
-      // Fall through to SQLite WebAssembly fallback
+    // Query trailing benchmark runs and model intelligence directly from Cloudflare D1 edge API
+    const apiRes = await fetch('/api/history?limit=168');
+    if (!apiRes.ok) {
+      throw new Error(`Edge API responded with HTTP ${apiRes.status}`);
     }
 
-    // 2. Fallback to client-side SQLite if edge API is not bound or running offline
-    if (!data) {
-      const SQL = await initSqlJs({
-        locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
-      });
-
-      const res = await fetch('history.db');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const buf = await res.arrayBuffer();
-      state.db = new SQL.Database(new Uint8Array(buf));
-      data = loadFromDb(state.db);
+    const data = await apiRes.json();
+    if (!data || !Array.isArray(data.runs) || data.runs.length === 0) {
+      throw new Error('No benchmark data returned from edge API');
     }
 
     const processed = processData(data);
@@ -289,6 +296,8 @@ async function init() {
 
     // Nav status
     updateNavStatus();
+    updateBenchmarkFreshness();
+    setInterval(updateBenchmarkFreshness, 60_000);
 
     // Populate selects
     populateExplorerSelect();
@@ -332,6 +341,8 @@ async function init() {
     applyLang();
 
   } catch (err) {
+    if (state.rawRuns.length === 0) historyUnavailable = true;
+    updateBenchmarkFreshness();
     document.getElementById('loading').style.display = 'none';
     document.getElementById('app').classList.add('visible');
     document.getElementById('error-state').style.display = 'flex';

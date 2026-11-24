@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import argparse
+import http.client
 import json
 import os
 import sys
@@ -10,14 +12,29 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from db_utils import write_run  # noqa: E402
-
 API_BASE = os.getenv("API_BASE", "https://integrate.api.nvidia.com/v1")
 API_KEY = os.getenv("NIM_API_KEY", "")
 MODEL_GROUP = os.getenv("MODEL_GROUP", "all")
 REQUEST_TIMEOUT_SECONDS = int(os.getenv("REQUEST_TIMEOUT_SECONDS", "300"))
 PROMPT = "Write a Python function that checks if a number is prime and returns True or False"
+PROFILE_PROMPTS = {
+    "code": PROMPT,
+    "json": 'Return exactly one JSON object with the integer field "answer" set to the product of 6 and 7.',
+    "tool": "Use the report_value tool to report the product of 6 and 7. Do not answer in prose.",
+}
+REPORT_VALUE_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "report_value",
+        "description": "Report an integer result.",
+        "parameters": {
+            "type": "object",
+            "properties": {"value": {"type": "integer"}},
+            "required": ["value"],
+            "additionalProperties": False,
+        },
+    },
+}
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 OUTPUT_FILE = SCRIPT_DIR / "results.json"
@@ -62,14 +79,19 @@ def failure_result(model: str, error: str) -> dict[str, Any]:
     }
 
 
-def to_int(value: Any) -> int:
+def is_expected_value(text: str, field: str) -> bool:
+    """Check the exact expected object, including its field type."""
     try:
-        return int(value)
-    except (TypeError, ValueError):
-        return 0
+        value = json.loads(text)
+    except json.JSONDecodeError:
+        return False
+    return (
+        isinstance(value, dict) and value.keys() == {field}
+        and type(value[field]) is int and value[field] == 42
+    )
 
 
-def call_model(model: str, prompt: str) -> dict[str, Any]:
+def call_model(model: str, prompt: str, profile: str = "code") -> dict[str, Any]:
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
@@ -83,6 +105,8 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
         # GLM-5.3 thinking is always enabled; cap effort so this short benchmark
         # can reach a final answer instead of spending the whole output budget reasoning.
         payload.update({"max_tokens": 2048, "reasoning_effort": "low"})
+    if profile == "tool":
+        payload.update({"tools": [REPORT_VALUE_TOOL], "tool_choice": "auto"})
     body = json.dumps(payload).encode("utf-8")
 
     request = urllib.request.Request(
@@ -96,19 +120,17 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
     )
 
     started = time.perf_counter()
-    status_code = 0
-    error_body = ""
     reasoning_chars = 0
     finish_reason: str | None = None
+    completed = False
+    tool_calls: dict[int, dict[str, str]] = {}
 
     try:
         with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-            status_code = response.status
-
             content_parts: list[str] = []
             time_to_first_token_ms: int | None = None
-            completion_tokens = 0
-            total_tokens = 0
+            completion_tokens: int | None = None
+            total_tokens: int | None = None
 
             for raw_line in response:
                 line = raw_line.decode("utf-8", errors="replace").strip()
@@ -116,74 +138,74 @@ def call_model(model: str, prompt: str) -> dict[str, Any]:
                     continue
                 data_str = line[len("data:"):].strip()
                 if data_str == "[DONE]":
+                    completed = True
                     break
                 try:
                     chunk = json.loads(data_str)
                 except json.JSONDecodeError:
                     continue
+                if not isinstance(chunk, dict):
+                    continue
+                if chunk.get("error"):
+                    return failure_result(model, "Provider returned an error in the stream")
 
                 # Extract content from delta
                 choices = chunk.get("choices")
-                if isinstance(choices, list) and choices:
+                if isinstance(choices, list) and choices and isinstance(choices[0], dict):
                     choice = choices[0]
                     delta = choice.get("delta") or {}
+                    if not isinstance(delta, dict):
+                        continue
                     text = delta.get("content") or ""
                     reasoning = delta.get("reasoning_content") or delta.get("reasoning") or ""
                     if isinstance(reasoning, str):
                         reasoning_chars += len(reasoning)
                     finish_reason = choice.get("finish_reason") or finish_reason
-                    if text:
-                        if time_to_first_token_ms is None:
+                    if isinstance(text, str) and text:
+                        if time_to_first_token_ms is None and text.strip():
                             time_to_first_token_ms = int((time.perf_counter() - started) * 1000)
                         content_parts.append(text)
+                    parts = delta.get("tool_calls")
+                    if profile == "tool" and isinstance(parts, list):
+                        for part in parts:
+                            if not isinstance(part, dict) or not isinstance(part.get("function"), dict):
+                                continue
+                            index = part.get("index", 0)
+                            if not isinstance(index, int):
+                                continue
+                            call = tool_calls.setdefault(index, {"name": "", "arguments": ""})
+                            for key, value in part["function"].items():
+                                if key in call and isinstance(value, str):
+                                    call[key] += value
 
-                usage = chunk.get("usage") if isinstance(chunk.get("usage"), dict) else {}
-                completion_tokens = to_int(usage.get("completion_tokens"))
-                total_tokens = to_int(usage.get("total_tokens"))
+                usage = chunk.get("usage")
+                if isinstance(usage, dict):
+                    if isinstance(usage.get("completion_tokens"), int):
+                        completion_tokens = usage["completion_tokens"]
+                    if isinstance(usage.get("total_tokens"), int):
+                        total_tokens = usage["total_tokens"]
 
             response_time = int((time.perf_counter() - started) * 1000)
             content = "".join(content_parts)
 
     except urllib.error.HTTPError as exc:
-        status_code = getattr(exc, "code", 0) or 0
-        error_body = exc.read().decode("utf-8", errors="replace")
-        response_time = int((time.perf_counter() - started) * 1000)
-        content = ""
-        time_to_first_token_ms = None
+        exc.close()
+        return failure_result(model, f"HTTP {exc.code}")
     except TimeoutError:
         return failure_result(model, f"Request timed out after {REQUEST_TIMEOUT_SECONDS}s")
-    except Exception as exc:
-        return failure_result(model, f"Request failed: {exc}")
+    except (OSError, http.client.HTTPException) as exc:
+        return failure_result(model, f"Request failed ({type(exc).__name__})")
 
-    if status_code >= 400:
-        error_message = f"HTTP {status_code}"
-        # Try SSE-formatted error body first (streaming providers)
-        for line in error_body.splitlines():
-            if line.strip().startswith("data: ") and line.strip()[6:] != "[DONE]":
-                try:
-                    err_chunk = json.loads(line.strip()[6:])
-                    err_obj = err_chunk.get("error")
-                    if isinstance(err_obj, dict):
-                        error_message = f"HTTP {status_code}: {err_obj.get('message', '')}"
-                    elif isinstance(err_obj, str):
-                        error_message = f"HTTP {status_code}: {err_obj}"
-                except json.JSONDecodeError:
-                    pass
-                break
-        else:
-            # Fallback: plain JSON error body (non-streaming error responses)
-            try:
-                err_data = json.loads(error_body)
-                err_obj = err_data.get("error")
-                if isinstance(err_obj, dict):
-                    error_message = f"HTTP {status_code}: {err_obj.get('message', '')}"
-                elif isinstance(err_obj, str):
-                    error_message = f"HTTP {status_code}: {err_obj}"
-            except (json.JSONDecodeError, AttributeError):
-                pass
-        return failure_result(model, error_message)
-
-    if not content.strip():
+    if not completed and not finish_reason:
+        return failure_result(model, "Stream closed before completion")
+    if profile == "tool":
+        call = next(iter(tool_calls.values()), None) if len(tool_calls) == 1 else None
+        if not call or call["name"] != "report_value" or not is_expected_value(call["arguments"], "value"):
+            return failure_result(model, "Expected one report_value tool call with integer value 42")
+        content = call["arguments"]
+    elif profile == "json" and not is_expected_value(content, "answer"):
+        return failure_result(model, "Expected a JSON object with integer answer 42")
+    elif not content.strip():
         details = []
         if reasoning_chars:
             details.append("reasoning only")
@@ -236,17 +258,21 @@ def compile_output(timestamp: str, prompt: str, models: list[dict[str, Any]]) ->
     }
 
 
-def update_history(new_run: dict[str, Any]) -> None:
-    write_run(new_run)
-    print(f"History updated: {str(SCRIPT_DIR.parent / 'history.db')}")
-
-
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Collect NVIDIA NIM benchmark results.")
+    parser.add_argument("--profile", choices=PROFILE_PROMPTS, default="code")
+    parser.add_argument("--output", type=Path, help="Path to the results JSON file.")
+    options = parser.parse_args()
+
     if not API_KEY:
         print("Error: NIM_API_KEY environment variable not set", file=sys.stderr)
         return 1
 
     models = selected_models()
+    prompt = PROFILE_PROMPTS[options.profile]
+    output = options.output or (
+        OUTPUT_FILE if options.profile == "code" else SCRIPT_DIR / f"results-{options.profile}.json"
+    )
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     group_label = f" (Group: {MODEL_GROUP})" if MODEL_GROUP else ""
@@ -258,7 +284,7 @@ def main() -> int:
     results: list[dict[str, Any]] = []
     for model in models:
         print(f"Testing: {model}")
-        result = call_model(model, PROMPT)
+        result = call_model(model, prompt, options.profile)
         if result.get("success"):
             ttft_str = f", TTFT {result['timeToFirstToken']}ms" if result.get("timeToFirstToken") is not None else ""
             print(f"  ✓ Success ({result['responseTime']}ms{ttft_str}, {result.get('tokensGenerated', 0)} tokens)")
@@ -270,16 +296,14 @@ def main() -> int:
     print()
     print("Compiling results...")
 
-    final_json = compile_output(timestamp, PROMPT, results)
-    OUTPUT_FILE.write_text(json.dumps(final_json, indent=2), encoding="utf-8")
+    final_json = compile_output(timestamp, prompt, results)
+    final_json["profile"] = options.profile
+    output.write_text(json.dumps(final_json, indent=2), encoding="utf-8")
 
     success_count = final_json["summary"]["successCount"]
     total_count = final_json["summary"]["totalModels"]
-    print(f"Results saved to {OUTPUT_FILE.name}")
+    print(f"Results saved to {output}")
     print(f"Summary: {success_count}/{total_count} successful")
-
-    if MODEL_GROUP == "all":
-        update_history(final_json)
 
     return 0
 

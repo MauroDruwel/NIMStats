@@ -1,70 +1,3 @@
-// ─── SQLite Data Loader ───────────────────────────────────────────────────────
-function loadFromDb(db) {
-  const runsQ = db.exec(
-    `SELECT r.id, r.timestamp, p.text, m.name, r.fastest_time
-     FROM runs r
-     JOIN prompts p ON r.prompt_id = p.id
-     LEFT JOIN models m ON r.fastest_model_id = m.id
-     ORDER BY r.timestamp DESC`
-  );
-  if (!runsQ.length || !runsQ[0].values.length) return { runs: [], modelIntel: {} };
-
-  const runs = runsQ[0].values.map(([id, timestamp, prompt, fm, ft]) => ({
-    _dbId: id,
-    timestamp,
-    prompt,
-    models: [],
-    summary: { fastestModel: fm || 'N/A', fastestTime: ft || 0 }
-  }));
-
-  const runById = new Map(runs.map((r, i) => [r._dbId, i]));
-
-  const resQ = db.exec(
-    `SELECT mr.run_id, m.name, mr.success, e.text, mr.response_time, mr.tokens_generated, mr.total_tokens, mr.time_to_first_token
-     FROM model_results mr
-     JOIN models m ON mr.model_id = m.id
-     LEFT JOIN errors e ON mr.error_id = e.id
-     ORDER BY mr.run_id ASC`
-  );
-  if (resQ.length && resQ[0].values.length) {
-    for (const [run_id, model, success, error, rt, tg, tt, ttft] of resQ[0].values) {
-      const idx = runById.get(run_id);
-      if (idx !== undefined) {
-        runs[idx].models.push({
-          model,
-          success: success === 1,
-          error: error || null,
-          responseTime: rt,
-          tokensGenerated: tg,
-          totalTokens: tt,
-          timeToFirstToken: ttft,
-        });
-      }
-    }
-  }
-
-  // Load model intelligence
-  const modelIntel = {};
-  try {
-    const intelQ = db.exec("SELECT name, intelligence_score FROM models");
-    if (intelQ.length && intelQ[0].values.length) {
-      for (const [name, intel] of intelQ[0].values) {
-        modelIntel[name] = intel != null ? intel : 50.0;
-      }
-    }
-  } catch (err) {
-    console.warn("Failed to read intelligence_score from database, using fallback:", err);
-  }
-
-  // Derive success count and total models per run
-  for (const run of runs) {
-    run.summary.successCount = run.models.filter(m => m.success).length;
-    run.summary.totalModels = run.models.length;
-  }
-
-  return { runs, modelIntel };
-}
-
 // ─── Shared Stats Computation ──────────────────────────────────────────────────
 function computeModelStats(runs, modelNames, modelIntel) {
   const modelStats = {};
@@ -172,4 +105,31 @@ function recomputeStats() {
   }
   state.runs = runsSubset;
   state.modelStats = computeModelStats(state.runs, state.modelNames, state.modelIntel || {});
+}
+
+const MIN_FALLBACK_MATCHES = 5;
+
+function findModelFallback(runs, primary) {
+  const latest = runs.at(-1);
+  const candidates = new Map((latest?.models || [])
+    .filter(({ model }) => model !== primary)
+    .map(({ model }) => [model, { model, matched: 0, succeeded: 0 }]));
+
+  for (const { models } of runs) {
+    if (!models.some(result => result.model === primary && result.success === false)) continue;
+    for (const result of models) {
+      const candidate = candidates.get(result.model);
+      if (!candidate || typeof result.success !== 'boolean') continue;
+      candidate.matched++;
+      if (result.success) candidate.succeeded++;
+    }
+  }
+
+  const options = [...candidates.values()];
+  const recommendation = options
+    .filter(option => option.matched >= MIN_FALLBACK_MATCHES && option.succeeded > 0)
+    .sort((a, b) => (b.succeeded / b.matched) - (a.succeeded / a.matched)
+      || b.matched - a.matched || a.model.localeCompare(b.model))[0];
+  const mostMatches = Math.max(0, ...options.map(option => option.matched));
+  return { recommendation, mostMatches };
 }

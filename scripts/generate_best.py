@@ -8,59 +8,69 @@ Outputs:
 """
 
 import json
-import sqlite3
 import sys
-from datetime import timezone, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-HISTORY_DB = REPO_ROOT / "history.db"
 TOP_DIR = REPO_ROOT / "top"
 
-
-def _ensure_columns(conn: sqlite3.Connection) -> None:
-    """Add new columns to existing databases if missing."""
-    cursor = conn.execute("PRAGMA table_info(model_results)")
-    columns = {row[1] for row in cursor.fetchall()}
-    if "time_to_first_token" not in columns:
-        conn.execute("ALTER TABLE model_results ADD COLUMN time_to_first_token INTEGER")
-        conn.commit()
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from push_run_to_d1 import execute_d1_sql, get_auth_token
 
 
-def load_data(conn):
-    runs_q = conn.execute(
-        """SELECT r.id, r.timestamp, r.fastest_time, m.name
-           FROM runs r
-           LEFT JOIN models m ON r.fastest_model_id = m.id
-           ORDER BY r.timestamp ASC"""
-    ).fetchall()
+def load_data_from_d1(token: str):
+    runs_resp = execute_d1_sql(
+        "SELECT r.id, r.timestamp, r.fastest_time, m.name as fastest_model "
+        "FROM runs r "
+        "LEFT JOIN models m ON r.fastest_model_id = m.id "
+        "ORDER BY r.timestamp ASC;",
+        token
+    )
+    runs_rows = runs_resp.get("result", [{}])[0].get("results", [])
 
-    # Load model intelligence scores
-    models_intel = {}
-    for m_name, intel in conn.execute("SELECT name, intelligence_score FROM models").fetchall():
-        models_intel[m_name] = intel
+    intel_resp = execute_d1_sql(
+        "SELECT name, intelligence_score FROM models;",
+        token
+    )
+    intel_rows = intel_resp.get("result", [{}])[0].get("results", [])
+    models_intel = {r["name"]: r.get("intelligence_score") for r in intel_rows if "name" in r}
 
-    if not runs_q:
+    if not runs_rows:
         return [], models_intel
 
+    mr_resp = execute_d1_sql(
+        "SELECT mr.run_id, m.name as model, mr.success, mr.response_time, mr.tokens_generated, mr.time_to_first_token "
+        "FROM model_results mr "
+        "JOIN models m ON mr.model_id = m.id "
+        "ORDER BY mr.run_id ASC;",
+        token
+    )
+    mr_rows = mr_resp.get("result", [{}])[0].get("results", [])
+
+    run_map = {}
     runs = []
-    for run_id, ts, ft, fm in runs_q:
-        results_q = conn.execute(
-            """SELECT m.name, mr.success, mr.response_time, mr.tokens_generated, mr.time_to_first_token
-               FROM model_results mr
-               JOIN models m ON mr.model_id = m.id
-               WHERE mr.run_id = ?""",
-            (run_id,),
-        ).fetchall()
-        runs.append({
-            "timestamp": ts,
-            "fastestModel": fm or "N/A",
-            "fastestTime": ft or 0,
-            "models": [
-                {"model": m, "success": bool(s), "responseTime": rt, "tokensGenerated": tg, "timeToFirstToken": ttft}
-                for m, s, rt, tg, ttft in results_q
-            ],
-        })
+    for r in runs_rows:
+        run_obj = {
+            "timestamp": r.get("timestamp"),
+            "fastestModel": r.get("fastest_model") or "N/A",
+            "fastestTime": r.get("fastest_time") or 0,
+            "models": [],
+        }
+        run_map[r["id"]] = run_obj
+        runs.append(run_obj)
+
+    for mr in mr_rows:
+        r_obj = run_map.get(mr["run_id"])
+        if r_obj:
+            r_obj["models"].append({
+                "model": mr.get("model"),
+                "success": bool(mr.get("success")),
+                "responseTime": mr.get("response_time"),
+                "tokensGenerated": mr.get("tokens_generated"),
+                "timeToFirstToken": mr.get("time_to_first_token"),
+            })
+
     return runs, models_intel
 
 
@@ -163,52 +173,48 @@ def write_endpoint(slug: str, best_model: str, stats_record: dict, key_name: str
 
 
 def main():
-    if not HISTORY_DB.exists():
-        print(f"Error: {HISTORY_DB} not found", file=sys.stderr)
+    token = get_auth_token()
+    if not token:
+        print("Error: No Cloudflare credentials found for D1 query", file=sys.stderr)
         return 1
 
-    conn = sqlite3.connect(str(HISTORY_DB))
-    try:
-        _ensure_columns(conn)
-        runs, models_intel = load_data(conn)
-        TOP_DIR.mkdir(parents=True, exist_ok=True)
+    runs, models_intel = load_data_from_d1(token)
+    TOP_DIR.mkdir(parents=True, exist_ok=True)
+
+    if not runs:
+        print("No runs in Cloudflare D1")
+        empty = {"error": "No benchmark data available", "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
+        (TOP_DIR / "index.json").write_text(json.dumps(empty, indent=2), encoding="utf-8")
+        (TOP_DIR / "model.txt").write_text("", encoding="utf-8")
+        return 0
+
+    stats = compute_stats(runs, models_intel)
         
-        if not runs:
-            print("No runs in history.db")
-            empty = {"error": "No benchmark data available", "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
-            (TOP_DIR / "index.json").write_text(json.dumps(empty, indent=2), encoding="utf-8")
-            (TOP_DIR / "model.txt").write_text("", encoding="utf-8")
-            return 0
-            
-        stats = compute_stats(runs, models_intel)
+    # Filter out models that failed the last test (likely offline)
+    last_run_successes = set()
+    if runs:
+        last_run = runs[-1]
+        for m_res in last_run.get("models", []):
+            if m_res.get("success"):
+                last_run_successes.add(m_res.get("model"))
+                
+    eligible_models = [m for m in stats if m in last_run_successes]
+    if not eligible_models:
+        print("Warning: No models succeeded in the last run. Falling back to all models.")
+        eligible_models = list(stats.keys())
         
-        # Filter out models that failed the last test (likely offline)
-        last_run_successes = set()
-        if runs:
-            last_run = runs[-1]
-            for m_res in last_run.get("models", []):
-                if m_res.get("success"):
-                    last_run_successes.add(m_res.get("model"))
-                    
-        eligible_models = [m for m in stats if m in last_run_successes]
-        if not eligible_models:
-            print("Warning: No models succeeded in the last run. Falling back to all models.")
-            eligible_models = list(stats.keys())
-        
-        # 1. Balanced
-        best_balanced = max(eligible_models, key=lambda m: stats[m]["score_balanced"])
-        write_endpoint("index", best_balanced, stats[best_balanced], "score_balanced")
-        
-        # 2. Speed
-        best_speed = max(eligible_models, key=lambda m: stats[m]["score_speed"])
-        write_endpoint("speed", best_speed, stats[best_speed], "score_speed")
-        
-        # 3. Intelligence
-        best_intel = max(eligible_models, key=lambda m: stats[m]["score_intel"])
-        write_endpoint("intelligence", best_intel, stats[best_intel], "score_intel")
-        
-    finally:
-        conn.close()
+    # 1. Balanced
+    best_balanced = max(eligible_models, key=lambda m: stats[m]["score_balanced"])
+    write_endpoint("index", best_balanced, stats[best_balanced], "score_balanced")
+    
+    # 2. Speed
+    best_speed = max(eligible_models, key=lambda m: stats[m]["score_speed"])
+    write_endpoint("speed", best_speed, stats[best_speed], "score_speed")
+    
+    # 3. Intelligence
+    best_intel = max(eligible_models, key=lambda m: stats[m]["score_intel"])
+    write_endpoint("intelligence", best_intel, stats[best_intel], "score_intel")
+    
     return 0
 
 

@@ -1,118 +1,117 @@
-// Cloudflare Pages Function: /api/history
-// Returns trailing benchmark runs and model intelligence scores from Cloudflare D1.
-// Edge-cached globally on Cloudflare CDN to ensure 100% free-tier usage.
+const DEFAULT_LIMIT = 100;
+const MAX_LIMIT = 168;
 
-export async function onRequestGet({ env }) {
-  if (!env.DB) {
-    return new Response(
-      JSON.stringify({
-        error: "Cloudflare D1 database binding 'DB' is not configured yet.",
-        docs: "Bind 'DB' in Cloudflare Dashboard -> Pages -> Settings -> Functions -> D1 Database Bindings",
-      }),
-      {
-        status: 503,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      }
-    );
+const HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Cache-Control": "public, max-age=60, s-maxage=300",
+};
+
+const RECENT_RESULTS = `
+  WITH recent_runs AS (
+    SELECT r.id, r.timestamp, r.prompt_id, r.fastest_model_id, r.fastest_time
+    FROM runs r
+    WHERE EXISTS (SELECT 1 FROM model_results WHERE run_id = r.id)
+    ORDER BY r.timestamp DESC, r.id DESC
+    LIMIT ?
+  )
+  SELECT r.id, r.timestamp, p.text AS prompt, fastest.name AS fastest_model, r.fastest_time,
+         m.name AS model, mr.success, e.text AS error, mr.response_time,
+         mr.tokens_generated, mr.total_tokens, mr.time_to_first_token
+  FROM recent_runs r
+  JOIN prompts p ON p.id = r.prompt_id
+  JOIN model_results mr ON mr.run_id = r.id
+  JOIN models m ON m.id = mr.model_id
+  LEFT JOIN models fastest ON fastest.id = r.fastest_model_id
+  LEFT JOIN errors e ON e.id = mr.error_id
+  ORDER BY r.timestamp DESC, r.id DESC, mr.model_id ASC
+`;
+
+export async function onRequestGet(context) {
+  if (!context.env.DB) {
+    return unavailable();
+  }
+
+  const url = new URL(context.request.url);
+  const requested = url.searchParams.get("limit");
+  const limit = requested === null ? DEFAULT_LIMIT : Number(requested);
+  if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) {
+    return Response.json({ error: "limit must be an integer from 1 to 168" }, {
+      status: 400,
+      headers: { ...HEADERS, "Cache-Control": "no-store" },
+    });
+  }
+
+  const cache = globalThis.caches?.default;
+  // All equivalent requests share a key. Bump the version if the response shape changes.
+  url.search = new URLSearchParams({ limit: String(limit), v: "2" });
+  const cacheKey = new Request(url);
+  if (cache) {
+    try {
+      const cached = await cache.match(cacheKey);
+      if (cached) return cached;
+    } catch (error) {
+      console.warn("History cache read failed", error);
+    }
   }
 
   try {
-    // 1. Fetch recent runs (limit to trailing 100 runs)
-    const runsResult = await env.DB.prepare(
-      `SELECT r.id, r.timestamp, p.text as prompt, m.name as fastest_model, r.fastest_time
-       FROM runs r
-       JOIN prompts p ON r.prompt_id = p.id
-       LEFT JOIN models m ON r.fastest_model_id = m.id
-       ORDER BY r.timestamp DESC
-       LIMIT 100`
-    ).all();
+    const db = context.env.DB;
+    const [measurements, scores] = await db.batch([
+      db.prepare(RECENT_RESULTS).bind(limit),
+      db.prepare("SELECT name, intelligence_score FROM models"),
+    ]);
 
-    const rawRuns = runsResult.results || [];
-    if (!rawRuns.length) {
-      return new Response(JSON.stringify({ runs: [], modelIntel: {} }), {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Cache-Control": "public, max-age=300, s-maxage=3600",
-        },
-      });
-    }
-
-    const runIds = rawRuns.map((r) => r.id);
-    const minRunId = Math.min(...runIds);
-    const maxRunId = Math.max(...runIds);
-
-    // 2. Fetch model results within the ID range of the fetched runs
-    const resultsQ = await env.DB.prepare(
-      `SELECT mr.run_id, m.name as model, mr.success, e.text as error, mr.response_time, mr.tokens_generated, mr.total_tokens, mr.time_to_first_token
-       FROM model_results mr
-       JOIN models m ON mr.model_id = m.id
-       LEFT JOIN errors e ON mr.error_id = e.id
-       WHERE mr.run_id BETWEEN ? AND ?
-       ORDER BY mr.run_id ASC`
-    ).bind(minRunId, maxRunId).all();
-
-    // 3. Fetch model intelligence scores
-    const intelQ = await env.DB.prepare(
-      "SELECT name, intelligence_score FROM models"
-    ).all();
-
-    const modelIntel = {};
-    for (const row of intelQ.results || []) {
-      modelIntel[row.name] = row.intelligence_score != null ? row.intelligence_score : 50.0;
-    }
-
-    // 4. Assemble runs structure matching frontend expectation
-    const runs = rawRuns.map((r) => ({
-      _dbId: r.id,
-      timestamp: r.timestamp,
-      prompt: r.prompt,
-      models: [],
-      summary: {
-        fastestModel: r.fastest_model || "N/A",
-        fastestTime: r.fastest_time || 0,
-      },
-    }));
-
-    const runMap = new Map(runs.map((r) => [r._dbId, r]));
-
-    for (const mr of resultsQ.results || []) {
-      const run = runMap.get(mr.run_id);
-      if (run) {
-        run.models.push({
-          model: mr.model,
-          success: mr.success === 1,
-          error: mr.error || null,
-          responseTime: mr.response_time,
-          tokensGenerated: mr.tokens_generated,
-          totalTokens: mr.total_tokens,
-          timeToFirstToken: mr.time_to_first_token,
-        });
+    const runs = new Map();
+    for (const row of measurements.results) {
+      let run = runs.get(row.id);
+      if (!run) {
+        run = {
+          _dbId: row.id,
+          timestamp: row.timestamp,
+          prompt: row.prompt,
+          models: [],
+          summary: {
+            fastestModel: row.fastest_model ?? "N/A",
+            fastestTime: row.fastest_time ?? 0,
+            successCount: 0,
+            totalModels: 0,
+          },
+        };
+        runs.set(row.id, run);
       }
+      const success = row.success === 1;
+      run.models.push({
+        model: row.model,
+        success,
+        error: row.error ?? null,
+        responseTime: row.response_time,
+        tokensGenerated: row.tokens_generated,
+        totalTokens: row.total_tokens,
+        timeToFirstToken: row.time_to_first_token,
+      });
+      run.summary.successCount += Number(success);
+      run.summary.totalModels += 1;
     }
 
-    for (const run of runs) {
-      run.summary.successCount = run.models.filter((m) => m.success).length;
-      run.summary.totalModels = run.models.length;
+    const modelIntel = runs.size ? Object.fromEntries(
+      scores.results.map((row) => [row.name, row.intelligence_score ?? 50]),
+    ) : {};
+    const response = Response.json({ runs: [...runs.values()], modelIntel }, { headers: HEADERS });
+    if (cache && runs.size) {
+      context.waitUntil(cache.put(cacheKey, response.clone()).catch((error) => {
+        console.warn("History cache write failed", error);
+      }));
     }
-
-    return new Response(JSON.stringify({ runs, modelIntel }), {
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "public, max-age=300, s-maxage=3600",
-      },
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
-    });
+    return response;
+  } catch (error) {
+    console.error("Could not read benchmark history from D1", error);
+    return unavailable();
   }
+}
+
+function unavailable() {
+  return Response.json({ error: "Benchmark history is unavailable" }, {
+    status: 503,
+    headers: { ...HEADERS, "Cache-Control": "no-store" },
+  });
 }

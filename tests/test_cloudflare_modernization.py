@@ -76,6 +76,21 @@ class TestCloudflareModernization(unittest.TestCase):
         self.assertTrue((functions_dir / "top.js").exists())
         self.assertTrue((functions_dir / "reliable.js").exists())
 
+    def test_legacy_fallback_completely_removed(self):
+        """Verify no client-side sql.js or history.db fallback remains."""
+        index_html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertNotIn("sql-wasm.js", index_html, "index.html must not load sql-wasm.js")
+
+        main_js = (REPO_ROOT / "js" / "main.js").read_text(encoding="utf-8")
+        self.assertNotIn("initSqlJs", main_js, "main.js must not reference initSqlJs")
+        self.assertNotIn("history.db", main_js, "main.js must not fetch history.db")
+
+        data_js = (REPO_ROOT / "js" / "data.js").read_text(encoding="utf-8")
+        self.assertNotIn("loadFromDb", data_js, "data.js must not have loadFromDb")
+
+        helpers_js = (REPO_ROOT / "js" / "helpers.js").read_text(encoding="utf-8")
+        self.assertNotIn("db: null", helpers_js, "helpers.js must not store db in state")
+
 
 if __name__ == "__main__":
     unittest.main()

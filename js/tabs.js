@@ -807,9 +807,54 @@ function renderTimeline() {
 }
 
 // ─── Compare Tab ──────────────────────────────────────────────────────────────
+function renderModelFallback(primary) {
+  const evidence = document.getElementById('fallback-evidence');
+  const copy = document.getElementById('fallback-copy');
+  const feedback = document.getElementById('fallback-feedback');
+  const manual = document.getElementById('fallback-json');
+  const { recommendation, mostMatches } = findModelFallback(state.runs, primary);
+  const number = new Intl.NumberFormat(window.getUiLocale());
+
+  copy.hidden = !recommendation;
+  copy.onclick = null;
+  feedback.textContent = '';
+  manual.hidden = true;
+  manual.value = '';
+  if (!recommendation) {
+    evidence.textContent = mostMatches < MIN_FALLBACK_MATCHES
+      ? t('fallback.insufficient', { count: number.format(mostMatches), min: number.format(MIN_FALLBACK_MATCHES) })
+      : t('fallback.no_success', { count: number.format(mostMatches) });
+    return;
+  }
+
+  const { model, succeeded, matched } = recommendation;
+  evidence.textContent = t('fallback.evidence', {
+    model,
+    succeeded: number.format(succeeded),
+    matched: number.format(matched),
+  });
+
+  const pair = JSON.stringify({ primary, fallback: model }, null, 2);
+  const copyPair = async () => {
+    try {
+      await navigator.clipboard.writeText(pair);
+      if (copy.onclick === copyPair) feedback.textContent = t('fallback.copied');
+    } catch {
+      if (copy.onclick !== copyPair) return;
+      manual.value = pair;
+      manual.hidden = false;
+      feedback.textContent = t('fallback.manual');
+      manual.focus();
+      manual.select();
+    }
+  };
+  copy.onclick = copyPair;
+}
+
 function renderCompare() {
   const modelA = state.compareModelA;
   const modelB = state.compareModelB;
+  renderModelFallback(modelA);
   const sA = state.modelStats[modelA];
   const sB = state.modelStats[modelB];
   if (!sA || !sB) return;

@@ -25,7 +25,7 @@ class FakeResponse:
 
 
 class TestModelRequests(unittest.TestCase):
-    def run_call(self, model, lines):
+    def run_call(self, model, lines, profile="code"):
         captured = {}
 
         def fake_urlopen(request, timeout):
@@ -34,7 +34,7 @@ class TestModelRequests(unittest.TestCase):
             return FakeResponse(lines)
 
         with patch("urllib.request.urlopen", fake_urlopen):
-            result = test_models.call_model(model, "test prompt")
+            result = test_models.call_model(model, "test prompt", profile)
         return result, captured["payload"]
 
     def test_glm_models_use_low_effort_and_room_for_final_answer(self):
@@ -71,6 +71,43 @@ class TestModelRequests(unittest.TestCase):
         self.assertFalse(result["success"])
         self.assertIn("reasoning only", result["error"])
         self.assertIn("finish_reason=length", result["error"])
+
+    def test_final_usage_survives_later_events_without_usage(self):
+        result, _payload = self.run_call("test/model", [
+            b'data: {"choices":[{"delta":{"content":"answer"}}]}\n',
+            b'data: {"usage":{"completion_tokens":12,"total_tokens":42}}\n',
+            b'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n',
+            b'data: [DONE]\n',
+        ])
+        self.assertTrue(result["success"])
+        self.assertEqual(result["tokensGenerated"], 12)
+        self.assertEqual(result["totalTokens"], 42)
+
+    def test_partial_stream_is_not_reported_as_success(self):
+        result, _payload = self.run_call("test/model", [
+            b'data: {"choices":[{"delta":{"content":"partial"}}]}\n',
+        ])
+        self.assertFalse(result["success"])
+        self.assertIn("closed before completion", result["error"])
+
+    def test_json_profile_requires_expected_integer_output(self):
+        for content, success in [('{"answer":42}', True), ('{"answer":"42"}', False), ('{"answer":6}', False)]:
+            with self.subTest(content=content):
+                event = {"choices": [{"delta": {"content": content}, "finish_reason": "stop"}]}
+                result, _payload = self.run_call("test/model", [f"data: {json.dumps(event)}\n".encode()], "json")
+                self.assertEqual(result["success"], success)
+
+    def test_tool_profile_accepts_arguments_split_across_events(self):
+        parts = [
+            {"function": {"name": "report_value", "arguments": '{"value":'}},
+            {"function": {"arguments": "42}"}},
+        ]
+        events = [f'data: {json.dumps({"choices": [{"delta": {"tool_calls": [part]}}]})}\n'.encode()
+                  for part in parts]
+        result, payload = self.run_call("test/model", [*events, b"data: [DONE]\n"], "tool")
+        self.assertTrue(result["success"])
+        self.assertIsNone(result["timeToFirstToken"])
+        self.assertEqual(payload["tools"][0]["function"]["name"], "report_value")
 
 
 if __name__ == "__main__":
