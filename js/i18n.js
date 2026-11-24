@@ -1627,10 +1627,12 @@ window.setLang = function (lang) {
   window.applyLang();
   if (typeof updateNavStatus === 'function') updateNavStatus();
   if (typeof updateBenchmarkFreshness === 'function') updateBenchmarkFreshness();
-  if (typeof switchTab === 'function' && typeof state !== 'undefined' && state.rawRuns.length) {
+  if (typeof state !== 'undefined' && state.rawRuns && state.rawRuns.length) {
+    if (typeof populateExplorerSelect === 'function') populateExplorerSelect();
+    if (typeof populateCompareSelects === 'function') populateCompareSelects();
     // 关闭所有下拉，使其下次打开时以新语言渲染
     document.querySelectorAll('.custom-select-container.open').forEach(c => c.classList.remove('open'));
-    switchTab(state.currentTab);
+    if (typeof switchTab === 'function') switchTab(state.currentTab);
   }
 };
 

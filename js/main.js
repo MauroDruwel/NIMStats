@@ -23,7 +23,7 @@ function createCustomDropdown(containerId, options, activeValue, onChangeCallbac
     triggerContent.innerHTML = `
       ${providerChip(val, true)}
       <span style="font-weight:600;font-size:13px">${short}</span>
-      <span style="font-size:10px;font-weight:700;background:var(--bg-card2);padding:1px 5px;border-radius:4px;color:${scoreColor};font-family:'JetBrains Mono'">评分：${score}</span>
+      <span style="font-size:10px;font-weight:700;background:var(--bg-card2);padding:1px 5px;border-radius:4px;color:${scoreColor};font-family:'JetBrains Mono'">${t('dropdown.score', { score })}</span>
     `;
   }
 
