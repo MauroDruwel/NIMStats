@@ -1,1 +1,1 @@
-nvidia/nemotron-3.5-bolt-e4b
+poolside/laguna-xs-2.1
