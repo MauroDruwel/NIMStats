@@ -1,16 +1,16 @@
 {
-  "best_model": "nvidia/nemotron-3.5-bolt-e4b",
-  "provider": "nvidia",
+  "best_model": "poolside/laguna-xs-2.1",
+  "provider": "poolside",
   "score": 65,
   "intelligence": null,
   "uptime": 100.0,
-  "avg_response_time_ms": 6112.615384615385,
-  "best_response_time_ms": 5622,
-  "avg_time_to_first_token_ms": 302.8,
-  "avg_throughput_tps": 82.0,
-  "total_runs": 26,
-  "success_count": 26,
-  "wins": 0,
-  "last_seen": "2026-11-26T15:00:25Z",
-  "generated_at": "2026-11-26T15:06:53Z"
+  "avg_response_time_ms": 4264.62962962963,
+  "best_response_time_ms": 2462,
+  "avg_time_to_first_token_ms": 218.2,
+  "avg_throughput_tps": 89.7,
+  "total_runs": 27,
+  "success_count": 27,
+  "wins": 17,
+  "last_seen": "2026-11-26T16:00:27Z",
+  "generated_at": "2026-11-26T16:05:58Z"
 }
