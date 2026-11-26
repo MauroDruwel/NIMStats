@@ -1,16 +1,16 @@
 {
   "best_model": "poolside/laguna-xs-2.1",
   "provider": "poolside",
-  "score": 81,
+  "score": 83,
   "intelligence": null,
   "uptime": 100.0,
-  "avg_response_time_ms": 3949.181818181818,
+  "avg_response_time_ms": 3958.0,
   "best_response_time_ms": 2462,
-  "avg_time_to_first_token_ms": 177.8,
-  "avg_throughput_tps": 93.2,
-  "total_runs": 11,
-  "success_count": 11,
-  "wins": 7,
-  "last_seen": "2026-11-26T00:00:19Z",
-  "generated_at": "2026-11-26T00:13:04Z"
+  "avg_time_to_first_token_ms": 175.7,
+  "avg_throughput_tps": 95.7,
+  "total_runs": 12,
+  "success_count": 12,
+  "wins": 8,
+  "last_seen": "2026-11-26T01:00:18Z",
+  "generated_at": "2026-11-26T01:11:33Z"
 }
