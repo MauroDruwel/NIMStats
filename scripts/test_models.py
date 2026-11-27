@@ -42,10 +42,8 @@ OUTPUT_FILE = SCRIPT_DIR / "results.json"
 ALL_MODELS = [
     "nvidia/nemotron-3.5-bolt-e4b",
     "nvidia/nemotron-3.5-super-vl-120b-a12b",
-    "meta/muse-glimmer-30b",
     "poolside/laguna-xs-2.1",
     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-    "google/gemma-4-31b-it",
     "nvidia/nemotron-3-ultra-550b-a55b",
     "nvidia/nemotron-3.5-lightning-30b-a3b",
     "z-ai/glm-5.3-flash",
