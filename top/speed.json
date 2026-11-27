@@ -1,16 +1,16 @@
 {
   "best_model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
   "provider": "nvidia",
-  "score": 98,
-  "intelligence": null,
-  "uptime": 70.0,
-  "avg_response_time_ms": 6373.142857142857,
+  "score": 99,
+  "intelligence": 13.6,
+  "uptime": 70.6,
+  "avg_response_time_ms": 6298.027777777777,
   "best_response_time_ms": 3079,
-  "avg_time_to_first_token_ms": 5120.1,
-  "avg_throughput_tps": 106.1,
-  "total_runs": 50,
-  "success_count": 35,
-  "wins": 12,
-  "last_seen": "2026-11-27T15:00:22Z",
-  "generated_at": "2026-11-27T15:08:43Z"
+  "avg_time_to_first_token_ms": 5060.8,
+  "avg_throughput_tps": 107.0,
+  "total_runs": 51,
+  "success_count": 36,
+  "wins": 13,
+  "last_seen": "2026-11-27T16:00:20Z",
+  "generated_at": "2026-11-27T16:07:57Z"
 }
