@@ -1,16 +1,16 @@
 {
-  "best_model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-  "provider": "nvidia",
+  "best_model": "poolside/laguna-xs-2.1",
+  "provider": "poolside",
   "score": 80,
   "intelligence": null,
-  "uptime": 95.3,
-  "avg_response_time_ms": 7889.705539358601,
-  "best_response_time_ms": 1515,
-  "avg_time_to_first_token_ms": 2095.5,
-  "avg_throughput_tps": 91.7,
-  "total_runs": 720,
-  "success_count": 686,
-  "wins": 491,
-  "last_seen": "2026-11-27T22:00:16Z",
-  "generated_at": "2026-11-27T22:05:28Z"
+  "uptime": 100.0,
+  "avg_response_time_ms": 6189.275862068966,
+  "best_response_time_ms": 1840,
+  "avg_time_to_first_token_ms": 428.4,
+  "avg_throughput_tps": 84.9,
+  "total_runs": 58,
+  "success_count": 58,
+  "wins": 31,
+  "last_seen": "2026-11-27T23:00:16Z",
+  "generated_at": "2026-11-27T23:03:16Z"
 }
